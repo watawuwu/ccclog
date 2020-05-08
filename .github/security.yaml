@@ -10,9 +10,11 @@ on:
     # workaround https://github.community/t5/GitHub-Actions/Using-on-push-tags-ignore-and-paths-ignore-together/td-p/38559
     branches:
     - '**'
+  schedule:
+    - cron: '0 0 * * 6'
 
 jobs:
-  build:
+  security_audit:
     runs-on: ubuntu-latest
     steps:
       - name: Setup code

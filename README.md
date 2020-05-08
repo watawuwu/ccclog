@@ -46,4 +46,4 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 
 ## Authors
 
-- Wataru Matsui <watawuwu@3bi.tech>
+- Wataru Matsui
