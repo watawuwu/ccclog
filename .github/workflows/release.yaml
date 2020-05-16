@@ -6,7 +6,7 @@ on:
      - '*.*.*'
 
 env:
-  NAME: bump
+  NAME: ccclog
 
 jobs:
   create_github_release:
