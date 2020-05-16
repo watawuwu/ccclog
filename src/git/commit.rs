@@ -276,6 +276,8 @@ impl<'a> From<LibCommit<'a>> for Commit {
             .describe(
                 DescribeOptions::new()
                     .describe_tags()
+                    // value:0 is --exact-match option
+                    // https://libgit2.org/libgit2/ex/HEAD/describe.html#git_describe_options_init-1
                     .max_candidates_tags(0),
             )
             .ok();
