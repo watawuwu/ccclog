@@ -27,7 +27,8 @@ impl Findable<ScanRange, Vec<Commit>> for Repository {
             .filter_map(|id| id.ok())
             .filter_map(|id| self.find_commit(id).ok())
             // This is exactly the same as --no-merge
-            .filter(|c| c.parent_count() == 1)
+            // count == 0 is first commit
+            .filter(|c| c.parent_count() <= 1)
             .take_while(|c| range.prev_id() != &c.id())
             .map(Commit::from)
             .collect::<Vec<Commit>>();

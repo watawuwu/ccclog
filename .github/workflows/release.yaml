@@ -6,7 +6,7 @@ on:
      - '*.*.*'
 
 env:
-  NAME: bump
+  NAME: ccclog
 
 jobs:
   create_github_release:
@@ -14,6 +14,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Setup code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Create Changelog
+      id: create_changelog
+      run: |
+        changelog="$(cargo run)"
+        changelog="${changelog//$'\n'/'%0A'}"
+        echo "::set-output name=changelog::$changelog"
+
     - name: Create release
       id: create_release
       uses: actions/create-release@v1
@@ -24,6 +36,7 @@ jobs:
         release_name: ${{ github.ref }}
         draft: false
         prerelease: false
+        body: ${{ steps.create_changelog.outputs.changelog }}
 
     - name: Output release URL file
       run: echo "${{ steps.create_release.outputs.upload_url }}" > release_url.txt

@@ -38,9 +38,11 @@ regex             = "1.2"
 itertools         = "0.9"
 Inflector         = "0.11"
 lazy_static       = "1.4"
+openssl-sys       = "*"
 
 [features]
-default = []
+default = ["vendored"]
+vendored = ["openssl-sys/vendored"]
 
 [dev-dependencies]
 tempdir    = "0.3"
