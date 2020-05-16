@@ -3,11 +3,11 @@
 TBD
 
 
-<!-- ![Github Action](https://github.com/watawuwu/ccclog/workflows/Test/badge.svg?branch=master) -->
-<!-- [![codecov](https://codecov.io/gh/watawuwu/ccclog/branch/master/graph/badge.svg)](https://codecov.io/gh/watawuwu/ccclog) -->
-<!-- [![Latest version](https://img.shields.io/crates/v/ccclog.svg)](https://crates.io/crates/ccclog) -->
-<!-- [![Documentation](https://docs.rs/ccclog/badge.svg)](https://docs.rs/crate/ccclog) -->
-<!-- [![Docker](https://img.shields.io/docker/build/watawuwu/ccclog.svg)](https://cloud.docker.com/repository/docker/watawuwu/ccclog/) -->
+![Github Action](https://github.com/watawuwu/ccclog/workflows/Test/badge.svg?branch=master)
+[![codecov](https://codecov.io/gh/watawuwu/ccclog/branch/master/graph/badge.svg)](https://codecov.io/gh/watawuwu/ccclog)
+[![Latest version](https://img.shields.io/crates/v/ccclog.svg)](https://crates.io/crates/ccclog)
+[![Documentation](https://docs.rs/ccclog/badge.svg)](https://docs.rs/crate/ccclog)
+[![Docker](https://img.shields.io/docker/build/watawuwu/ccclog.svg)](https://cloud.docker.com/repository/docker/watawuwu/ccclog/)
 ![License](https://img.shields.io/crates/l/ccclog.svg)
 
 
