@@ -99,7 +99,7 @@ publish:
 ifeq ($(LEVEL),)
 	$(error LEVEL not set correctly.)
 endif
-	cargo release $(LEVEL) --no-dev-version --tag-name "{{ version }}"
+	cargo release $(LEVEL) --no-dev-version --tag-name "{{version}}"
 
 container-build:
 	docker build -t $(CONTAINER_REPO):$(CONTAINER_TAG) .
