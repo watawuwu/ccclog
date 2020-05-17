@@ -11,6 +11,7 @@ pub struct Config {
     pub reverse: bool,
     pub root_indent_level: u8,
     pub ignore_summary: Option<Regex>,
+    pub ignore_types: Option<Vec<CommitType>>,
 }
 
 impl Default for Config {
@@ -20,6 +21,7 @@ impl Default for Config {
             reverse: false,
             root_indent_level: 2u8,
             ignore_summary: None,
+            ignore_types: None,
         }
     }
 }
@@ -126,14 +128,6 @@ impl Changelog {
         ct: &CommitType,
         commits: Vec<&Commit>,
     ) -> (Option<String>, Option<String>) {
-        let exclude = |commit: &&Commit| -> bool {
-            let regex = self.conf.ignore_summary.as_ref();
-            match regex {
-                Some(re) if re.is_match(commit.message().as_ref()) => false,
-                _ => true,
-            }
-        };
-
         let mut links = Vec::new();
         let aggregate = |commit: &Commit| -> String {
             let hash = commit.short_hash();
@@ -152,7 +146,8 @@ impl Changelog {
 
         let lines = commits
             .into_iter()
-            .filter(exclude)
+            .filter(self.ignore_summary())
+            .filter(self.ignore_types())
             .map(aggregate)
             .join("\n");
 
@@ -165,6 +160,26 @@ impl Changelog {
         let links = links.first().map(|_| links.join("\n"));
 
         (Some(section), links)
+    }
+
+    fn ignore_summary<'a>(&'a self) -> impl FnMut(&&'a Commit) -> bool {
+        move |commit: &&'a Commit| -> bool {
+            let regex = self.conf.ignore_summary.as_ref();
+            match regex {
+                Some(re) => !re.is_match(commit.message().as_ref()),
+                _ => true,
+            }
+        }
+    }
+
+    fn ignore_types<'a>(&'a self) -> impl FnMut(&&'a Commit) -> bool {
+        move |commit: &&'a Commit| -> bool {
+            let _types = self.conf.ignore_types.as_ref();
+            match _types {
+                Some(t) => !t.contains(&commit.raw_type()),
+                _ => true,
+            }
+        }
     }
 
     fn author(&self, author: &Author) -> String {
@@ -192,58 +207,6 @@ mod tests {
     use crate::git::tests::*;
 
     use super::*;
-
-    fn dummy_commits() -> Result<Commits> {
-        let mut commits = Vec::new();
-        let commit = dummy_commit(
-            "3d185faf719f12292414c88872e3397fc5dc4e62",
-            "test",
-            None,
-            false,
-            "add 3",
-            "Test User <test-user@test.com>",
-            "Wed Apr 01 01:01:03 2020 +0000",
-            Some("0.1.0"),
-        )?;
-        commits.push(commit);
-
-        let commit = dummy_commit(
-            "2d185faf719f12292414c88872e3397fc5dc4e62",
-            "fix",
-            None,
-            false,
-            "add 2",
-            "Test User <test-user@test.com>",
-            "Wed Apr 01 01:01:02 2020 +0000",
-            None,
-        )?;
-        commits.push(commit);
-
-        let commit = dummy_commit(
-            "1d185faf719f12292414c88872e3397fc5dc4e62",
-            "feat",
-            None,
-            false,
-            "add 1",
-            "Test User <test-user@test.com>",
-            "Wed Apr 01 01:01:01 2020 +0000",
-            None,
-        )?;
-        commits.push(commit);
-
-        let prev = dummy_commit(
-            "0d185faf719f12292414c88872e3397fc5dc4e62",
-            "feat",
-            None,
-            false,
-            "add 0",
-            "Test User <test-user0@test.com>",
-            "Wed Apr 01 01:01:00 2020 +0000",
-            Some("0.0.0"),
-        )?;
-
-        Ok(Commits::new(prev, commits))
-    }
 
     #[test]
     fn all_commit_type_ok() -> Result<()> {
@@ -392,17 +355,8 @@ mod tests {
         )?;
         commits.push(commit);
 
-        let previous = dummy_commit(
-            "0d185faf719f12292414c88872e3397fc5dc4e62",
-            "feat",
-            None,
-            false,
-            "add zero",
-            "Test User0 <test-user0@test.com>",
-            "Wed Apr 01 01:01:00 2020 +0000",
-            Some("0.1.0"),
-        )?;
-        let cms = Commits::new(previous, commits);
+        let prev = prev()?;
+        let cms = Commits::new(prev, commits);
         let gurl = GithubUrl::new("https://github.com/watawuwu/ccclog.git");
         let changelog = Changelog::new();
         let markdown = changelog.markdown(Some(&gurl), &cms)?;
@@ -443,7 +397,7 @@ mod tests {
 ### Security
 - [[2e185fa]] fix security (Test User12)
 
-[0.2.0]: https://github.com/watawuwu/ccclog/compare/0.1.0...0.2.0
+[0.2.0]: https://github.com/watawuwu/ccclog/compare/0.0.0...0.2.0
 [1d185fa]: https://github.com/watawuwu/ccclog/commit/1d185faf719f12292414c88872e3397fc5dc4e62
 [2d185fa]: https://github.com/watawuwu/ccclog/commit/2d185faf719f12292414c88872e3397fc5dc4e62
 [3d185fa]: https://github.com/watawuwu/ccclog/commit/3d185faf719f12292414c88872e3397fc5dc4e62
@@ -500,17 +454,7 @@ mod tests {
         )?;
         commits.push(commit);
 
-        let prev = dummy_commit(
-            "0d185faf719f12292414c88872e3397fc5dc4e62",
-            "feat",
-            None,
-            false,
-            "add zero",
-            "Test User0 <test-user0@test.com>",
-            "Wed Apr 01 01:01:00 2020 +0000",
-            Some("0.1.0"),
-        )?;
-
+        let prev = prev()?;
         let cms = Commits::new(prev, commits);
         let changelog = Changelog::new();
         let gurl = GithubUrl::new("https://github.com/watawuwu/ccclog.git");
@@ -521,7 +465,7 @@ mod tests {
 - [[2d185fa]] add feat2 (Test User2)
 - [[1d185fa]] add feat1 (Test User1)
 
-[1.0.0]: https://github.com/watawuwu/ccclog/compare/0.1.0...1.0.0
+[1.0.0]: https://github.com/watawuwu/ccclog/compare/0.0.0...1.0.0
 [3d185fa]: https://github.com/watawuwu/ccclog/commit/3d185faf719f12292414c88872e3397fc5dc4e62
 [2d185fa]: https://github.com/watawuwu/ccclog/commit/2d185faf719f12292414c88872e3397fc5dc4e62
 [1d185fa]: https://github.com/watawuwu/ccclog/commit/1d185faf719f12292414c88872e3397fc5dc4e62
@@ -581,17 +525,7 @@ mod tests {
         )?;
         commits.push(commit);
 
-        let prev = dummy_commit(
-            "0d185faf719f12292414c88872e3397fc5dc4e62",
-            "feat",
-            None,
-            false,
-            "add zero",
-            "Test User0 <test-user0@test.com>",
-            "Wed Apr 01 01:01:00 2020 +0000",
-            Some("0.0.0"),
-        )?;
-
+        let prev = prev()?;
         let cms = Commits::new(prev, commits);
         let changelog = Changelog::new();
         let gurl = GithubUrl::new("https://github.com/watawuwu/ccclog.git");
@@ -647,17 +581,6 @@ mod tests {
 
     #[test]
     fn unreleased_ok() -> Result<()> {
-        let prev = dummy_commit(
-            "0d185faf719f12292414c88872e3397fc5dc4e62",
-            "feat",
-            None,
-            false,
-            "add zero",
-            "Test User0 <test-user0@test.com>",
-            "Wed Apr 01 01:01:00 2020 +0000",
-            Some("0.1.0"),
-        )?;
-
         let mut commits = Vec::new();
         let commit = dummy_commit(
             "1d185faf719f12292414c88872e3397fc5dc4e62",
@@ -672,7 +595,7 @@ mod tests {
         commits.push(commit);
 
         let changelog = Changelog::new();
-
+        let prev = prev()?;
         let cms = Commits::new(prev, commits);
         let gurl = GithubUrl::new("https://github.com/watawuwu/ccclog.git");
         let markdown = changelog.markdown(Some(&gurl), &cms)?;
@@ -680,7 +603,7 @@ mod tests {
 ### Feat
 - [[1d185fa]] add first (Test User)
 
-[Unreleased]: https://github.com/watawuwu/ccclog/compare/0.1.0...HEAD
+[Unreleased]: https://github.com/watawuwu/ccclog/compare/0.0.0...HEAD
 [1d185fa]: https://github.com/watawuwu/ccclog/commit/1d185faf719f12292414c88872e3397fc5dc4e62
 "#;
         assert_eq!(markdown, expected);
@@ -714,17 +637,7 @@ mod tests {
         )?;
         commits.push(commit);
 
-        let prev = dummy_commit(
-            "0d185faf719f12292414c88872e3397fc5dc4e62",
-            "feat",
-            None,
-            false,
-            "add zero",
-            "Test User0 <test-user0@test.com>",
-            "Wed Apr 01 01:01:00 2020 +0000",
-            Some("0.0.0"),
-        )?;
-
+        let prev = prev()?;
         let cms = Commits::new(prev, commits);
         let changelog = Changelog::new();
         let gurl = GithubUrl::new("https://github.com/watawuwu/ccclog.git");
@@ -761,17 +674,7 @@ mod tests {
         )?;
         commits.push(commit);
 
-        let prev = dummy_commit(
-            "0d185faf719f12292414c88872e3397fc5dc4e62",
-            "feat",
-            None,
-            false,
-            "add zero",
-            "Test User0 <test-user0@test.com>",
-            "Wed Apr 01 01:01:00 2020 +0000",
-            Some("0.0.0"),
-        )?;
-
+        let prev = prev()?;
         let cms = Commits::new(prev, commits);
         let changelog = Changelog::new();
         let gurl = GithubUrl::new("https://github.com/watawuwu/ccclog.git");
@@ -798,14 +701,7 @@ mod tests {
             Some("0.1.0"),
         )?;
         commits.push(commit);
-        let prev = dummy_invalid_commit(
-            "0d185faf719f12292414c88872e3397fc5dc4e62",
-            "add zero",
-            "Test User0 <test-user0@test.com>",
-            "Wed Apr 01 01:01:00 2020 +0000",
-            Some("0.0.0"),
-        )?;
-
+        let prev = prev()?;
         let cms = Commits::new(prev, commits);
         let changelog = Changelog::new();
         let gurl = GithubUrl::new("https://github.com/watawuwu/ccclog.git");
@@ -860,17 +756,7 @@ mod tests {
         )?;
         commits.push(commit);
 
-        let prev = dummy_commit(
-            "0d185faf719f12292414c88872e3397fc5dc4e62",
-            "feat",
-            None,
-            false,
-            "add 0",
-            "Test User0 <test-user0@test.com>",
-            "Wed Apr 01 01:01:00 2020 +0000",
-            Some("0.0.0"),
-        )?;
-
+        let prev = prev()?;
         let cms = Commits::new(prev, commits);
         let changelog = Changelog::new();
         let gurl = GithubUrl::new("https://github.com/watawuwu/ccclog.git");
@@ -913,17 +799,7 @@ mod tests {
         )?;
         commits.push(commit);
 
-        let prev = dummy_commit(
-            "0d185faf719f12292414c88872e3397fc5dc4e62",
-            "feat",
-            None,
-            false,
-            "add 0",
-            "Test User0 <test-user0@test.com>",
-            "Wed Apr 01 01:01:00 2020 +0000",
-            Some("0.0.0"),
-        )?;
-
+        let prev = prev()?;
         let cms = Commits::new(prev, commits);
         let conf = Config {
             enable_email_link: true,
@@ -959,16 +835,7 @@ mod tests {
         )?;
         commits.push(commit);
 
-        let prev = dummy_commit(
-            "0d185faf719f12292414c88872e3397fc5dc4e62",
-            "feat",
-            None,
-            false,
-            "add 0",
-            "Test User0 <test-user0@test.com>",
-            "Wed Apr 01 01:01:00 2020 +0000",
-            Some("0.0.0"),
-        )?;
+        let prev = prev()?;
 
         let cms = Commits::new(prev, commits);
         let conf = Config {
@@ -1004,16 +871,7 @@ mod tests {
         )?;
         commits.push(commit);
 
-        let prev = dummy_commit(
-            "0d185faf719f12292414c88872e3397fc5dc4e62",
-            "feat",
-            None,
-            false,
-            "add 0",
-            "Test User0 <test-user0@test.com>",
-            "Wed Apr 01 01:01:00 2020 +0000",
-            Some("0.0.0"),
-        )?;
+        let prev = prev()?;
 
         let cms = Commits::new(prev, commits);
         let conf = Config {
@@ -1080,17 +938,7 @@ mod tests {
         )?;
         commits.push(commit);
 
-        let prev = dummy_commit(
-            "0d185faf719f12292414c88872e3397fc5dc4e62",
-            "feat",
-            None,
-            false,
-            "add 0",
-            "Test User0 <test-user0@test.com>",
-            "Wed Apr 01 01:01:00 2020 +0000",
-            Some("0.0.0"),
-        )?;
-
+        let prev = prev()?;
         let cms = Commits::new(prev, commits);
         let changelog = Changelog::new();
         let markdown = changelog.markdown(None, &cms)?;
@@ -1108,7 +956,7 @@ mod tests {
     }
 
     #[test]
-    fn filter_ok() -> Result<()> {
+    fn ignore_summary_ok() -> Result<()> {
         let cms = dummy_commits()?;
         let conf = Config {
             ignore_summary: Some(Regex::new(r#"^add 3$"#)?),
@@ -1122,6 +970,66 @@ mod tests {
 
 ### Fix
 - [2d185fa] add 2 (Test User)
+"#;
+        assert_eq!(markdown, expected);
+        Ok(())
+    }
+
+    #[test]
+    fn ignore_types_ok() -> Result<()> {
+        let cms = dummy_commits()?;
+        let conf = Config {
+            ignore_types: Some(vec![CommitType::Fix, CommitType::Test]),
+            ..Default::default()
+        };
+        let changelog = Changelog::from(conf);
+        let markdown = changelog.markdown(None, &cms)?;
+        let expected = r#"## 0.1.0 - 2020-04-01
+### Feat
+- [1d185fa] add 1 (Test User)
+"#;
+        assert_eq!(markdown, expected);
+        Ok(())
+    }
+
+    #[test]
+    fn custom_ignore_types_ok() -> Result<()> {
+        let mut commits = Vec::new();
+        let commit = dummy_commit(
+            "2d185faf719f12292414c88872e3397fc5dc4e62",
+            "custom",
+            None,
+            false,
+            "add 2",
+            "Test User <test-user@test.com>",
+            "Wed Apr 01 01:01:02 2020 +0000",
+            Some("0.1.0"),
+        )?;
+        commits.push(commit);
+
+        let commit = dummy_commit(
+            "1d185faf719f12292414c88872e3397fc5dc4e62",
+            "feat",
+            None,
+            false,
+            "add 1",
+            "Test User <test-user@test.com>",
+            "Wed Apr 01 01:01:01 2020 +0000",
+            None,
+        )?;
+        commits.push(commit);
+
+        let prev = prev()?;
+        let cmts = Commits::new(prev, commits);
+        let conf = Config {
+            ignore_types: Some(vec![CommitType::Custom(String::from("custom"))]),
+            ..Default::default()
+        };
+        let changelog = Changelog::from(conf);
+        let markdown = changelog.markdown(None, &cmts)?;
+        let expected = r#"## 0.1.0 - 2020-04-01
+### Feat
+- [1d185fa] add 1 (Test User)
 "#;
         assert_eq!(markdown, expected);
         Ok(())

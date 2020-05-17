@@ -25,6 +25,7 @@ fn run(args: Vec<String>) -> Result<String> {
         reverse: args.reverse,
         root_indent_level: args.root_indent_level,
         ignore_summary: args.ignore_summary,
+        ignore_types: args.ignore_types,
     };
     let changelog = Changelog::from(config);
     let url = git::gurl(&repo);

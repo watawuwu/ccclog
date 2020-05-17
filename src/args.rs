@@ -1,3 +1,4 @@
+use crate::git::CommitType;
 use anyhow::Result;
 use regex::Regex;
 use structopt::{clap, StructOpt};
@@ -22,6 +23,12 @@ pub struct Args {
         help = "Ignore summary use regex. Syntax: https://docs.rs/regex/1.3.7/regex/#syntax"
     )]
     pub ignore_summary: Option<Regex>,
+    #[structopt(
+        short = "t",
+        long,
+        help = "Ignore commit type. ex) feat|fix|build|doc|chore|ci|style|refactor|perf|test"
+    )]
+    pub ignore_types: Option<Vec<CommitType>>,
     #[structopt(
         name = "REPO_PATH",
         default_value = ".",
