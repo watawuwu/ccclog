@@ -1,0 +1,20 @@
+name: 'Generate changelog'
+description: 'Generate changelog from Conventional Commits'
+inputs:
+  repo_path:
+    description: 'Working directory of git'
+    required: true
+    default: '.'
+  revision_spec:
+    description: 'Revision spec. Ref to https://git-scm.com/book/en/v2/Git-Tools-Revision-Selection'
+    required: false
+outputs:
+  changelog:
+    description: 'Changelog'
+runs:
+  using: 'docker'
+  image: '.github/action/Dockerfile'
+  args:
+  - ${{ inputs.repo_path }}
+  - ${{ inputs.revision_spec }}
+

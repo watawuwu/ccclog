@@ -51,6 +51,84 @@ ARGS:
     <REVISION_SPEC>    Revision spec. Ref to https://git-scm.com/book/en/v2/Git-Tools-Revision-Selection
 ```
 
+## Usage from Github Action
+
+### Inputs
+
+#### `repo_path`
+
+Working directory of git.
+
+#### `revision_spec`
+
+Revision spec. Ref to https://git-scm.com/book/en/v2/Git-Tools-Revision-Selection
+
+### Outputs
+
+#### `changelog`
+
+Generated changelog
+
+### Example usage
+
+``` yaml
+name: Github Action Sample
+
+on:
+  push:
+    tags:
+     - '*.*.*'
+
+jobs:
+  create_github_release:
+    name: Create Github release
+    # If you use actions, use the platform that docker works
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Setup code
+      uses: actions/checkout@v2
+      with:
+        # Set the required number to create a changelog.
+        # If the history is small, it is recommended to specify 0 and acquire all history.
+        fetch-depth: 0
+
+    - name: Fetch all tags
+      # Get the tags to create history
+      # `actions/checkout@v2` has the --not-tags option
+      run: git fetch origin +refs/tags/*:refs/tags/*
+
+    - name: Create Changelog
+      id: create_changelog
+      uses: watawuwu/ccclog@gha-v1
+      # with:
+      #   repo_path: "."
+      #   revision_spec: "..HEAD"
+
+    # You can also exec the binary
+    # - name: Create Changelog
+    #   id: create_changelog
+    #   shell: bash -x {0}
+    #   run: |
+    #     mkdir bin && curl --tlsv1.2 -sSf https://raw.githubusercontent.com/watawuwu/ccclog/master/install.sh | sh -s -- --prefix ./
+    #     changelog="$(bin/ccclog)"
+    #     changelog="${changelog//$'\n'/'%0A'}"
+    #     echo "::set-output name=changelog::$changelog"
+
+    - name: Create release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: ${{ github.ref }}
+        draft: false
+        prerelease: false
+        # outputs.changelog parameter is available
+        body: ${{ steps.create_changelog.outputs.changelog }}
+```
+
 ## Installing
 
 - Install binary directly
