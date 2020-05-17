@@ -100,7 +100,7 @@ jobs:
 
     - name: Create Changelog
       id: create_changelog
-      uses: watawuwu/ccclog@gha-v1
+      uses: watawuwu/ccclog@gha-v0
       # with:
       #   repo_path: "."
       #   revision_spec: "..HEAD"
