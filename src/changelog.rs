@@ -1,15 +1,16 @@
 use anyhow::*;
 use itertools::Itertools;
-use serde::Deserialize;
 
 use crate::git::{Author, Commit, CommitType, Commits, GithubUrl, ReleaseRange};
+use regex::Regex;
 use std::collections::BTreeMap;
 
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug)]
 pub struct Config {
     pub enable_email_link: bool,
     pub reverse: bool,
     pub root_indent_level: u8,
+    pub ignore_summary: Option<Regex>,
 }
 
 impl Default for Config {
@@ -18,6 +19,7 @@ impl Default for Config {
             enable_email_link: false,
             reverse: false,
             root_indent_level: 2u8,
+            ignore_summary: None,
         }
     }
 }
@@ -124,13 +126,15 @@ impl Changelog {
         ct: &CommitType,
         commits: Vec<&Commit>,
     ) -> (Option<String>, Option<String>) {
-        if commits.is_empty() {
-            return (None, None);
-        }
+        let exclude = |commit: &&Commit| -> bool {
+            let regex = self.conf.ignore_summary.as_ref();
+            match regex {
+                Some(re) if re.is_match(commit.message().as_ref()) => false,
+                _ => true,
+            }
+        };
 
         let mut links = Vec::new();
-
-        // TODO args
         let aggregate = |commit: &Commit| -> String {
             let hash = commit.short_hash();
             let msg = commit.message();
@@ -146,9 +150,17 @@ impl Changelog {
             }
         };
 
-        let heading = self.sub_heading(ct);
-        let lines = commits.into_iter().map(aggregate).join("\n");
+        let lines = commits
+            .into_iter()
+            .filter(exclude)
+            .map(aggregate)
+            .join("\n");
 
+        if lines.is_empty() {
+            return (None, None);
+        }
+
+        let heading = self.sub_heading(ct);
         let section = format!("{}\n{}\n", heading, lines);
         let links = links.first().map(|_| links.join("\n"));
 
@@ -180,6 +192,58 @@ mod tests {
     use crate::git::tests::*;
 
     use super::*;
+
+    fn dummy_commits() -> Result<Commits> {
+        let mut commits = Vec::new();
+        let commit = dummy_commit(
+            "3d185faf719f12292414c88872e3397fc5dc4e62",
+            "test",
+            None,
+            false,
+            "add 3",
+            "Test User <test-user@test.com>",
+            "Wed Apr 01 01:01:03 2020 +0000",
+            Some("0.1.0"),
+        )?;
+        commits.push(commit);
+
+        let commit = dummy_commit(
+            "2d185faf719f12292414c88872e3397fc5dc4e62",
+            "fix",
+            None,
+            false,
+            "add 2",
+            "Test User <test-user@test.com>",
+            "Wed Apr 01 01:01:02 2020 +0000",
+            None,
+        )?;
+        commits.push(commit);
+
+        let commit = dummy_commit(
+            "1d185faf719f12292414c88872e3397fc5dc4e62",
+            "feat",
+            None,
+            false,
+            "add 1",
+            "Test User <test-user@test.com>",
+            "Wed Apr 01 01:01:01 2020 +0000",
+            None,
+        )?;
+        commits.push(commit);
+
+        let prev = dummy_commit(
+            "0d185faf719f12292414c88872e3397fc5dc4e62",
+            "feat",
+            None,
+            false,
+            "add 0",
+            "Test User <test-user0@test.com>",
+            "Wed Apr 01 01:01:00 2020 +0000",
+            Some("0.0.0"),
+        )?;
+
+        Ok(Commits::new(prev, commits))
+    }
 
     #[test]
     fn all_commit_type_ok() -> Result<()> {
@@ -1038,6 +1102,26 @@ mod tests {
 ### Custom2
 - [4d185fa] add 4 (Test User)
 - [3d185fa] add 3 (Test User)
+"#;
+        assert_eq!(markdown, expected);
+        Ok(())
+    }
+
+    #[test]
+    fn filter_ok() -> Result<()> {
+        let cms = dummy_commits()?;
+        let conf = Config {
+            ignore_summary: Some(Regex::new(r#"^add 3$"#)?),
+            ..Default::default()
+        };
+        let changelog = Changelog::from(conf);
+        let markdown = changelog.markdown(None, &cms)?;
+        let expected = r#"## 0.1.0 - 2020-04-01
+### Feat
+- [1d185fa] add 1 (Test User)
+
+### Fix
+- [2d185fa] add 2 (Test User)
 "#;
         assert_eq!(markdown, expected);
         Ok(())
