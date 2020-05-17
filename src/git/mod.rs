@@ -142,6 +142,63 @@ pub(crate) mod tests {
         Ok(commit)
     }
 
+    pub fn dummy_commits() -> Result<Commits> {
+        let mut commits = Vec::new();
+        let commit = dummy_commit(
+            "3d185faf719f12292414c88872e3397fc5dc4e62",
+            "test",
+            None,
+            false,
+            "add 3",
+            "Test User <test-user@test.com>",
+            "Wed Apr 01 01:01:03 2020 +0000",
+            Some("0.1.0"),
+        )?;
+        commits.push(commit);
+
+        let commit = dummy_commit(
+            "2d185faf719f12292414c88872e3397fc5dc4e62",
+            "fix",
+            None,
+            false,
+            "add 2",
+            "Test User <test-user@test.com>",
+            "Wed Apr 01 01:01:02 2020 +0000",
+            None,
+        )?;
+        commits.push(commit);
+
+        let commit = dummy_commit(
+            "1d185faf719f12292414c88872e3397fc5dc4e62",
+            "feat",
+            None,
+            false,
+            "add 1",
+            "Test User <test-user@test.com>",
+            "Wed Apr 01 01:01:01 2020 +0000",
+            None,
+        )?;
+        commits.push(commit);
+
+        let prev = prev()?;
+        Ok(Commits::new(prev, commits))
+    }
+
+    pub fn prev() -> Result<Commit> {
+        let prev = dummy_commit(
+            "0d185faf719f12292414c88872e3397fc5dc4e62",
+            "feat",
+            None,
+            false,
+            "add 0",
+            "Test User <test-user0@test.com>",
+            "Wed Apr 01 01:01:00 2020 +0000",
+            Some("0.0.0"),
+        )?;
+
+        Ok(prev)
+    }
+
     #[test]
     fn get_ok() -> Result<()> {
         let git_dir = git_dir()?;
