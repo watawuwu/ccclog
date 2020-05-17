@@ -1,7 +1,9 @@
 use anyhow::Result;
 use structopt::StructOpt;
+use structopt::{clap, StructOpt};
 
 #[derive(StructOpt, PartialEq, Debug)]
+#[structopt(setting(clap::AppSettings::ColoredHelp))]
 pub struct Args {
     #[structopt(short, long, help = "Make a link to the author using git config.email")]
     pub enable_email_link: bool,
