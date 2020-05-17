@@ -62,7 +62,7 @@ test4ci: fmt-check clippy ## Run the tests
 check: fix fmt ## Check syntax, but don't build object files
 	$(CARGO_COMMAND) check
 
-build: fmt-check clippy ## Build all project
+build: check clippy ## Build all project
 	$(CARGO_COMMAND) build
 
 release-build: ## Build all project
