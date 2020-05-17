@@ -36,7 +36,7 @@ fn main() {
     let args = env::args().collect::<Vec<String>>();
     let code = match run(args) {
         Ok(markdown) => {
-            println!("{}", markdown);
+            print!("{}", markdown);
             exitcode::OK
         }
         Err(err) => {
