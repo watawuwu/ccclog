@@ -11,6 +11,7 @@ pub struct Config {
     pub reverse: bool,
     pub root_indent_level: u8,
     pub ignore_summary: Option<Regex>,
+    pub ignore_types: Option<Vec<CommitType>>,
 }
 
 impl Default for Config {
@@ -20,6 +21,7 @@ impl Default for Config {
             reverse: false,
             root_indent_level: 2u8,
             ignore_summary: None,
+            ignore_types: None,
         }
     }
 }
@@ -126,14 +128,6 @@ impl Changelog {
         ct: &CommitType,
         commits: Vec<&Commit>,
     ) -> (Option<String>, Option<String>) {
-        let exclude = |commit: &&Commit| -> bool {
-            let regex = self.conf.ignore_summary.as_ref();
-            match regex {
-                Some(re) if re.is_match(commit.message().as_ref()) => false,
-                _ => true,
-            }
-        };
-
         let mut links = Vec::new();
         let aggregate = |commit: &Commit| -> String {
             let hash = commit.short_hash();
@@ -152,7 +146,8 @@ impl Changelog {
 
         let lines = commits
             .into_iter()
-            .filter(exclude)
+            .filter(self.ignore_summary())
+            .filter(self.ignore_types())
             .map(aggregate)
             .join("\n");
 
@@ -165,6 +160,26 @@ impl Changelog {
         let links = links.first().map(|_| links.join("\n"));
 
         (Some(section), links)
+    }
+
+    fn ignore_summary<'a>(&'a self) -> impl FnMut(&&'a Commit) -> bool {
+        move |commit: &&'a Commit| -> bool {
+            let regex = self.conf.ignore_summary.as_ref();
+            match regex {
+                Some(re) => !re.is_match(commit.message().as_ref()),
+                _ => true,
+            }
+        }
+    }
+
+    fn ignore_types<'a>(&'a self) -> impl FnMut(&&'a Commit) -> bool {
+        move |commit: &&'a Commit| -> bool {
+            let _types = self.conf.ignore_types.as_ref();
+            match _types {
+                Some(t) => !t.contains(&commit.raw_type()),
+                _ => true,
+            }
+        }
     }
 
     fn author(&self, author: &Author) -> String {
