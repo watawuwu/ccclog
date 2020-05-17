@@ -1,7 +1,9 @@
 use anyhow::Result;
-use structopt::StructOpt;
+use regex::Regex;
+use structopt::{clap, StructOpt};
 
-#[derive(StructOpt, PartialEq, Debug)]
+#[derive(StructOpt, Debug)]
+#[structopt(setting(clap::AppSettings::ColoredHelp))]
 pub struct Args {
     #[structopt(short, long, help = "Make a link to the author using git config.email")]
     pub enable_email_link: bool,
@@ -14,7 +16,12 @@ pub struct Args {
         help = "Change markdown root subject indent"
     )]
     pub root_indent_level: u8,
-
+    #[structopt(
+        short = "s",
+        long,
+        help = "Ignore summary use regex. Syntax: https://docs.rs/regex/1.3.7/regex/#syntax"
+    )]
+    pub ignore_summary: Option<Regex>,
     #[structopt(
         name = "REPO_PATH",
         default_value = ".",
