@@ -94,6 +94,7 @@ clippy: ## Run clippy
 
 gen-test-data:
 	tar acvf tests/assets/git-data1.tar.gz -C tests/assets git-data1
+	tar acvf tests/assets/git-data2.tar.gz -C tests/assets git-data2
 
 publish:
 ifeq ($(LEVEL),)
