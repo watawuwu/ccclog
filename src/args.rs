@@ -29,6 +29,8 @@ pub struct Args {
         help = "Ignore commit type. ex) feat|fix|build|doc|chore|ci|style|refactor|perf|test"
     )]
     pub ignore_types: Option<Vec<CommitType>>,
+    #[structopt(short = "p", long, help = "Tag prefix. v1.0.0 tag's prefix is `v`")]
+    pub tag_prefix: Option<String>,
     #[structopt(
         name = "REPO_PATH",
         default_value = ".",

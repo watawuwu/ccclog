@@ -18,7 +18,7 @@ fn run(args: Vec<String>) -> Result<String> {
     debug!("args: {:?}", args);
 
     let repo = git::repo(&args.path)?;
-    let commits = git::commits(&repo, args.revspec())?;
+    let commits = git::commits(&repo, args.revspec(), args.tag_prefix.as_deref())?;
 
     let config = Config {
         enable_email_link: args.enable_email_link,
