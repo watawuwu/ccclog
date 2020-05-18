@@ -271,6 +271,7 @@ impl<'a> From<LibCommit<'a>> for Commit {
             Utc,
         );
         let cc = ConventionalCommits::from_str(commit.message().unwrap_or_default()).ok();
+        // TODO check tag_prefix pattern
         let desc = commit
             .as_object()
             .describe(
@@ -335,7 +336,7 @@ mod tests {
     fn find_by_ok() -> Result<()> {
         let git_dir = git_dir()?;
         let repo = Repository::open(git_dir)?;
-        let version = Version::parse("0.1.0")?;
+        let version = Version::from_str("0.1.0")?;
 
         let commit = repo.find_by(&version)?;
         let expected = dummy_commit(

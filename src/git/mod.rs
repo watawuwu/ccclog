@@ -9,6 +9,7 @@ use std::path::Path;
 
 use anyhow::*;
 use git2::{self, Repository};
+use log::*;
 use repository::{Findable, TagFindable};
 
 pub use commit::*;
@@ -25,14 +26,15 @@ pub fn gurl(repo: &Repository) -> Option<GithubUrl> {
     url.map(|u| GithubUrl::new(u.as_str()))
 }
 
-pub fn commits(repo: &Repository, spec: Option<&str>) -> Result<Commits> {
+pub fn commits(repo: &Repository, spec: Option<&str>, tag_prefix: Option<&str>) -> Result<Commits> {
     let range = match spec {
         Some(s) => parse_range(repo, s)?,
         None => {
-            let mut versions = repo.versions()?;
+            let mut versions = repo.versions(tag_prefix)?;
             detect_range(repo, &mut versions)?
         }
     };
+    debug!("scan range: {:?}", &range);
 
     let list = repo.find_by(&range)?;
     let commits = Commits::new(range.prev(), list);

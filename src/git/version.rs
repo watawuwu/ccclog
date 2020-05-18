@@ -1,21 +1,52 @@
 use anyhow::*;
+use lazy_static::*;
+use log::*;
+use regex::Regex;
 use semver::Version as SemVer;
 use std::fmt;
 use std::iter::FromIterator;
+use std::str::FromStr;
+
+lazy_static! {
+    static ref PREFIX: Regex =
+        Regex::new(r"^(?P<prefix>.*?)(?P<version>[0-9]+?.[0-9]+?.[0-9]+?(?:.*)$)").unwrap();
+}
 
 #[derive(Clone, Debug, PartialEq, PartialOrd, Ord, Eq)]
-pub(super) struct Version(SemVer);
+pub(super) struct Version {
+    prefix: String,
+    ver: SemVer,
+}
 
-impl Version {
-    pub fn parse(version: &str) -> Result<Self> {
-        Ok(Version(SemVer::parse(version)?))
+impl FromStr for Version {
+    type Err = Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let caps = PREFIX
+            .captures(s)
+            .ok_or_else(|| anyhow!("Can't find semver format. value: {}", s))?;
+
+        let cap_pre = caps.name("prefix");
+        let cap_ver = caps.name("version");
+
+        let (prefix, version) = match (cap_pre, cap_ver) {
+            (Some(p), Some(v)) => (p.as_str(), v.as_str()),
+            (None, Some(v)) => ("", v.as_str()),
+            _ => bail!("Can't find semver format. value: {}", s),
+        };
+
+        debug!("prefix: {}", prefix);
+        debug!("version: {}", version);
+
+        Ok(Version {
+            prefix: prefix.to_string(),
+            ver: SemVer::parse(version)?,
+        })
     }
 }
 
 impl fmt::Display for Version {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        fmt.write_str(&self.0.to_string())?;
-        Ok(())
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}{}", self.prefix, self.ver)
     }
 }
 
@@ -57,15 +88,36 @@ mod tests {
 
     #[test]
     fn latest_range_ok() -> Result<()> {
-        let expected_latest = Version::parse("0.2.0")?;
-        let expected_previous = Version::parse("0.1.0")?;
-        let mut versions = vec![expected_latest.clone(), expected_previous.clone()]
+        let expected_latest = Version::from_str("0.2.0")?;
+        let expected_prev = Version::from_str("0.1.0")?;
+        let mut versions = vec![expected_latest.clone(), expected_prev.clone()]
             .into_iter()
             .collect::<Versions>();
 
-        let (latest, previous) = versions.latest_range();
-        assert_eq!(previous, Some(&expected_previous));
+        let (latest, prev) = versions.latest_range();
+        assert_eq!(prev, Some(&expected_prev));
         assert_eq!(latest, Some(&expected_latest));
+        Ok(())
+    }
+
+    #[test]
+    fn parse_ok() -> Result<()> {
+        let a = Version::from_str("0.2.0")?;
+        assert!(a.prefix.is_empty());
+        assert_eq!(a.to_string(), "0.2.0");
+
+        let a = Version::from_str("v0.2.0")?;
+        assert_eq!(a.prefix, "v");
+        assert_eq!(a.to_string(), "v0.2.0");
+
+        let a = Version::from_str("web-0.2.0")?;
+        assert_eq!(a.prefix, "web-");
+        assert_eq!(a.to_string(), "web-0.2.0");
+
+        let a = Version::from_str("product-0.2.0")?;
+        assert_eq!(a.prefix, "product-");
+        assert_eq!(a.to_string(), "product-0.2.0");
+
         Ok(())
     }
 }
