@@ -32,22 +32,29 @@ Generate changelog from commit messages created by [Conventional Commits](https:
 - Other usage
 
 ```txt
-Generate changelog from git commit
-
 USAGE:
-    ccclog [FLAGS] [OPTIONS] [ARGS]
+    ccclog [FLAGS] [OPTIONS] [--] [ARGS]
 
 FLAGS:
-    -e, --enable_email_link    Make a link to the author using git config.email
+    -e, --enable-email-link    Make a link to the author using git config.email
     -h, --help                 Prints help information
     -r, --reverse              Reverse commit display order
     -V, --version              Prints version information
 
 OPTIONS:
-    -i, --root_indent_level <root_indent_level>    Change markdown root subject indent [default: 2]
+    -s, --ignore-summary <ignore-summary>
+            Ignore summary use regex. Syntax: https://docs.rs/regex/1.3.7/regex/#syntax
+
+    -t, --ignore-types <ignore-types>...
+            Ignore commit type. ex) feat|fix|build|doc|chore|ci|style|refactor|perf|test
+
+    -i, --root-indent-level <root-indent-level>    Change markdown root subject indent [default: 2]
+    -m, --tag-pattern <tag-pattern>
+            Regular expression that matches the tag [default: ^v?\d+?.\d+?.\d+?(\-[\w.-]+?)?(\+[\w.-]+?)?$]
+
 
 ARGS:
-    <REPO_PATH>        Working directory of git [default: .]
+    <REPO_PATH>        Working directory of git [default: ]
     <REVISION_SPEC>    Revision spec. Ref to https://git-scm.com/book/en/v2/Git-Tools-Revision-Selection
 ```
 

@@ -15,6 +15,9 @@ use repository::{Findable, TagFindable};
 pub use commit::*;
 pub use conventional_commit::*;
 pub use github_url::GithubUrl;
+pub use version::SEMVER_PATTERN;
+
+use regex::Regex;
 use version::*;
 
 pub fn repo<P: AsRef<Path>>(path: P) -> Result<Repository> {
@@ -26,11 +29,11 @@ pub fn gurl(repo: &Repository) -> Option<GithubUrl> {
     url.map(|u| GithubUrl::new(u.as_str()))
 }
 
-pub fn commits(repo: &Repository, spec: Option<&str>, tag_prefix: Option<&str>) -> Result<Commits> {
+pub fn commits(repo: &Repository, spec: Option<&str>, tag_pattern: &Regex) -> Result<Commits> {
     let range = match spec {
         Some(s) => parse_range(repo, s)?,
         None => {
-            let mut versions = repo.versions(tag_prefix)?;
+            let mut versions = repo.versions(tag_pattern)?;
             detect_range(repo, &mut versions)?
         }
     };
@@ -107,6 +110,7 @@ pub(crate) mod tests {
         description: &str,
         author: &str,
         datetime: &str,
+        parent_count: usize,
         tag: Option<&str>,
     ) -> Result<Commit> {
         let cc_scope = scope.map(String::from);
@@ -121,9 +125,12 @@ pub(crate) mod tests {
         let datetime = DateTime::parse_from_str(datetime, "%a %b %d %H:%M:%S %Y %z")?;
         let datetime = datetime.with_timezone(&Utc);
         let id = Oid::from_str(id)?;
-        let tag = tag.map(|t| NamableObj::new(t, datetime));
+        let tag = tag.map(|x| NamableObj::Tag {
+            name: String::from(x),
+            datetime,
+        });
 
-        let commit = Commit::new(id, &summary, author, datetime, Some(cc), tag)?;
+        let commit = Commit::new(id, &summary, author, datetime, parent_count, Some(cc), tag)?;
 
         Ok(commit)
     }
@@ -138,8 +145,11 @@ pub(crate) mod tests {
         let datetime = DateTime::parse_from_str(datetime, "%a %b %d %H:%M:%S %Y %z")?;
         let datetime = datetime.with_timezone(&Utc);
         let id = Oid::from_str(id)?;
-        let tag = tag.map(|t| NamableObj::new(t, datetime));
-        let commit = Commit::new(id, summary, author, datetime, None, tag)?;
+        let tag = tag.map(|x| NamableObj::Tag {
+            name: String::from(x),
+            datetime,
+        });
+        let commit = Commit::new(id, summary, author, datetime, 1, None, tag)?;
 
         Ok(commit)
     }
@@ -154,6 +164,7 @@ pub(crate) mod tests {
             "add 3",
             "Test User <test-user@test.com>",
             "Wed Apr 01 01:01:03 2020 +0000",
+            1,
             Some("0.1.0"),
         )?;
         commits.push(commit);
@@ -166,6 +177,7 @@ pub(crate) mod tests {
             "add 2",
             "Test User <test-user@test.com>",
             "Wed Apr 01 01:01:02 2020 +0000",
+            1,
             None,
         )?;
         commits.push(commit);
@@ -178,6 +190,7 @@ pub(crate) mod tests {
             "add 1",
             "Test User <test-user@test.com>",
             "Wed Apr 01 01:01:01 2020 +0000",
+            1,
             None,
         )?;
         commits.push(commit);
@@ -195,6 +208,7 @@ pub(crate) mod tests {
             "add 0",
             "Test User <test-user0@test.com>",
             "Wed Apr 01 01:01:00 2020 +0000",
+            1,
             Some("0.0.0"),
         )?;
 

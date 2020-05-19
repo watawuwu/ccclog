@@ -113,8 +113,14 @@ mod tests {
         let url = GithubUrl::new("https://test.com/watawuwu/ccclog.git");
 
         let datetime = Utc::now();
-        let start = NamableObj::new("0.1.0", datetime);
-        let end = NamableObj::new("0.3.0", datetime);
+        let start = NamableObj::Tag {
+            name: String::from("0.1.0"),
+            datetime,
+        };
+        let end = NamableObj::Tag {
+            name: String::from("0.3.0"),
+            datetime,
+        };
 
         let a = url.compare(&start, Some(&end));
         let e = "https://test.com/watawuwu/ccclog/compare/0.1.0...0.3.0";
@@ -132,6 +138,7 @@ mod tests {
             "test summary",
             "Test User<test-user@test.com>",
             Utc::now(),
+            1,
             None,
             None,
         )?;
