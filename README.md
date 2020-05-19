@@ -116,7 +116,7 @@ jobs:
       # with:
       #   repo_path: "."
       #   revision_spec: "..HEAD"
-      #   options: '--ignore-summary="cargo release.+" --root-indent-level=3 --tag-pattern="component-v"'
+      #   options: '--root-indent-level=3 --tag-pattern=component-v --ignore-summary=cargo\srelease.+'
 
     # You can also exec the binary
     # - name: Create Changelog
