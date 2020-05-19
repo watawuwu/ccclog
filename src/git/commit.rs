@@ -189,6 +189,7 @@ pub struct Commit {
     summary: String,
     author: Author,
     datetime: DateTime<Utc>,
+    parent_count: usize,
     cc: Option<ConventionalCommits>,
     obj: Option<NamableObj>,
 }
@@ -199,6 +200,7 @@ impl Commit {
         summary: &str,
         author: &str,
         datetime: DateTime<Utc>,
+        parent_count: usize,
         cc: Option<ConventionalCommits>,
         obj: Option<NamableObj>,
     ) -> Result<Self> {
@@ -207,6 +209,7 @@ impl Commit {
             summary: String::from(summary),
             author: Author::from_str(author)?,
             datetime,
+            parent_count,
             cc,
             obj,
         })
@@ -214,7 +217,7 @@ impl Commit {
 
     pub fn empty() -> Result<Self> {
         let id = Oid::from_str(EMPTY_HASH)?;
-        Self::new(id, "", "", Utc::now(), None, None)
+        Self::new(id, "", "", Utc::now(), 1, None, None)
     }
 
     pub fn short_hash(&self) -> String {
@@ -244,6 +247,10 @@ impl Commit {
     pub(crate) fn tag(&self) -> Option<&NamableObj> {
         self.obj.as_ref()
     }
+
+    pub(crate) fn parent_count(&self) -> usize {
+        self.parent_count
+    }
 }
 
 impl PartialOrd for Commit {
@@ -270,6 +277,7 @@ impl<'a> From<LibCommit<'a>> for Commit {
             NaiveDateTime::from_timestamp(commit.time().seconds(), 0),
             Utc,
         );
+        let parent_count = commit.parent_count();
         let cc = ConventionalCommits::from_str(commit.message().unwrap_or_default()).ok();
         // TODO check tag_prefix pattern
         let desc = commit
@@ -293,6 +301,7 @@ impl<'a> From<LibCommit<'a>> for Commit {
             summary,
             author,
             datetime,
+            parent_count,
             cc,
             obj,
         }
@@ -347,6 +356,7 @@ mod tests {
             "add README",
             "Test User <test-user@test.com>",
             "Wed Apr 29 16:29:47 2020 +0900",
+            1,
             Some("0.1.0"),
         )?;
 

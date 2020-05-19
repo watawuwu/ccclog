@@ -148,6 +148,9 @@ impl Changelog {
             .into_iter()
             .filter(self.ignore_summary())
             .filter(self.ignore_types())
+            // This is exactly the same as --no-merge
+            // count == 0 is first commit
+            .filter(|c| c.parent_count() <= 1)
             .map(aggregate)
             .join("\n");
 
@@ -219,6 +222,7 @@ mod tests {
             "fix security",
             "Test User12 <test-user12@test.com>",
             "Wed Apr 01 01:01:12 2020 +0000",
+            1,
             Some("0.2.0"),
         )?;
         commits.push(commit);
@@ -231,6 +235,7 @@ mod tests {
             "add some",
             "Test User11 <test-user11@test.com>",
             "Wed Apr 01 01:01:11 2020 +0000",
+            1,
             None,
         )?;
         commits.push(commit);
@@ -243,6 +248,7 @@ mod tests {
             "add test",
             "Test User10 <test-user10@test.com>",
             "Wed Apr 01 01:01:10 2020 +0000",
+            1,
             None,
         )?;
         commits.push(commit);
@@ -255,6 +261,7 @@ mod tests {
             "add perf",
             "Test User9 <test-user9@test.com>",
             "Wed Apr 01 01:01:09 2020 +0000",
+            1,
             None,
         )?;
         commits.push(commit);
@@ -267,6 +274,7 @@ mod tests {
             "add refactor",
             "Test User8 <test-user8@test.com>",
             "Wed Apr 01 01:01:08 2020 +0000",
+            1,
             None,
         )?;
         commits.push(commit);
@@ -279,6 +287,7 @@ mod tests {
             "add style",
             "Test User7 <test-user7@test.com>",
             "Wed Apr 01 01:01:07 2020 +0000",
+            1,
             None,
         )?;
         commits.push(commit);
@@ -291,6 +300,7 @@ mod tests {
             "add CI",
             "Test User6 <test-user6@test.com>",
             "Wed Apr 01 01:01:06 2020 +0000",
+            1,
             None,
         )?;
         commits.push(commit);
@@ -303,6 +313,7 @@ mod tests {
             "add chore",
             "Test User5 <test-user5@test.com>",
             "Wed Apr 01 01:01:05 2020 +0000",
+            1,
             None,
         )?;
         commits.push(commit);
@@ -315,6 +326,7 @@ mod tests {
             "add doc",
             "Test User4 <test-user4@test.com>",
             "Wed Apr 01 01:01:04 2020 +0000",
+            1,
             None,
         )?;
         commits.push(commit);
@@ -327,6 +339,7 @@ mod tests {
             "add build script",
             "Test User3 <test-user3@test.com>",
             "Wed Apr 01 01:01:03 2020 +0000",
+            1,
             None,
         )?;
         commits.push(commit);
@@ -339,6 +352,7 @@ mod tests {
             "fix typo",
             "Test User2 <test-user2@test.com>",
             "Wed Apr 01 01:01:03 2020 +0000",
+            1,
             None,
         )?;
         commits.push(commit);
@@ -351,6 +365,7 @@ mod tests {
             "add README",
             "Test User1 <test-user1@test.com>",
             "Wed Apr 01 01:01:01 2020 +0000",
+            1,
             None,
         )?;
         commits.push(commit);
@@ -426,6 +441,7 @@ mod tests {
             "add feat3",
             "Test User3 <test-user3@test.com>",
             "Wed Apr 01 01:01:03 2020 +0000",
+            1,
             Some("1.0.0"),
         )?;
         commits.push(commit);
@@ -438,6 +454,7 @@ mod tests {
             "add feat2",
             "Test User2 <test-user2@test.com>",
             "Wed Apr 01 01:01:03 2020 +0000",
+            1,
             None,
         )?;
         commits.push(commit);
@@ -450,6 +467,7 @@ mod tests {
             "add feat1",
             "Test User1 <test-user1@test.com>",
             "Wed Apr 01 01:01:01 2020 +0000",
+            1,
             None,
         )?;
         commits.push(commit);
@@ -485,6 +503,7 @@ mod tests {
             "add 4",
             "Test User <test-user@test.com>",
             "Wed Apr 01 01:01:04 2020 +0000",
+            1,
             Some("0.2.0"),
         )?;
         commits.push(commit);
@@ -497,6 +516,7 @@ mod tests {
             "add 3",
             "Test User <test-user@test.com>",
             "Wed Apr 01 01:01:03 2020 +0000",
+            1,
             None,
         )?;
         commits.push(commit);
@@ -509,6 +529,7 @@ mod tests {
             "add 2",
             "Test User <test-user@test.com>",
             "Wed Apr 01 01:01:02 2020 +0000",
+            1,
             Some("0.1.0"),
         )?;
         commits.push(commit);
@@ -521,6 +542,7 @@ mod tests {
             "add 1",
             "Test User <test-user@test.com>",
             "Wed Apr 01 01:01:01 2020 +0000",
+            1,
             None,
         )?;
         commits.push(commit);
@@ -590,6 +612,7 @@ mod tests {
             "add first",
             "Test User <test-user@test.com>",
             "Wed Apr 01 01:01:01 2020 +0000",
+            1,
             None,
         )?;
         commits.push(commit);
@@ -621,6 +644,7 @@ mod tests {
             "add second",
             "Test User <test-user@test.com>",
             "Wed Apr 01 01:01:02 2020 +0000",
+            1,
             None,
         )?;
         commits.push(commit);
@@ -633,6 +657,7 @@ mod tests {
             "add first",
             "Test User <test-user@test.com>",
             "Wed Apr 01 01:01:01 2020 +0000",
+            1,
             Some("0.1.0"),
         )?;
         commits.push(commit);
@@ -670,6 +695,7 @@ mod tests {
             "add first",
             "Test User <test-user@test.com>",
             "Wed Apr 01 01:01:01 2020 +0000",
+            1,
             Some("0.1.0"),
         )?;
         commits.push(commit);
@@ -728,6 +754,7 @@ mod tests {
             "add 3",
             "Test User <test-user@test.com>",
             "Wed Apr 01 01:01:03 2020 +0000",
+            1,
             Some("0.3.0"),
         )?;
         commits.push(commit);
@@ -740,6 +767,7 @@ mod tests {
             "add 2",
             "Test User <test-user@test.com>",
             "Wed Apr 01 01:01:02 2020 +0000",
+            1,
             Some("0.2.0"),
         )?;
         commits.push(commit);
@@ -752,6 +780,7 @@ mod tests {
             "add 1",
             "Test User <test-user@test.com>",
             "Wed Apr 01 01:01:01 2020 +0000",
+            1,
             Some("0.1.0"),
         )?;
         commits.push(commit);
@@ -795,6 +824,7 @@ mod tests {
             "add 3",
             "Test User <test-user@test.com>",
             "Wed Apr 01 01:01:03 2020 +0000",
+            1,
             Some("0.3.0"),
         )?;
         commits.push(commit);
@@ -831,6 +861,7 @@ mod tests {
             "add 3",
             "Test User <test-user@test.com>",
             "Wed Apr 01 01:01:03 2020 +0000",
+            1,
             Some("0.3.0"),
         )?;
         commits.push(commit);
@@ -867,6 +898,7 @@ mod tests {
             "add 1",
             "Test User <test-user@test.com>",
             "Wed Apr 01 01:01:03 2020 +0000",
+            1,
             Some("0.3.0"),
         )?;
         commits.push(commit);
@@ -899,6 +931,7 @@ mod tests {
             "add 4",
             "Test User <test-user@test.com>",
             "Wed Apr 01 01:01:03 2020 +0000",
+            1,
             Some("0.3.0"),
         )?;
         commits.push(commit);
@@ -911,6 +944,7 @@ mod tests {
             "add 3",
             "Test User <test-user@test.com>",
             "Wed Apr 01 01:01:03 2020 +0000",
+            1,
             None,
         )?;
         commits.push(commit);
@@ -923,6 +957,7 @@ mod tests {
             "add 2",
             "Test User <test-user@test.com>",
             "Wed Apr 01 01:01:03 2020 +0000",
+            1,
             None,
         )?;
         commits.push(commit);
@@ -934,6 +969,7 @@ mod tests {
             "add 1",
             "Test User <test-user@test.com>",
             "Wed Apr 01 01:01:03 2020 +0000",
+            1,
             None,
         )?;
         commits.push(commit);
@@ -1003,6 +1039,7 @@ mod tests {
             "add 2",
             "Test User <test-user@test.com>",
             "Wed Apr 01 01:01:02 2020 +0000",
+            1,
             Some("0.1.0"),
         )?;
         commits.push(commit);
@@ -1015,6 +1052,7 @@ mod tests {
             "add 1",
             "Test User <test-user@test.com>",
             "Wed Apr 01 01:01:01 2020 +0000",
+            1,
             None,
         )?;
         commits.push(commit);

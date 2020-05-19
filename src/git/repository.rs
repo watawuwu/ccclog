@@ -31,9 +31,6 @@ impl Findable<ScanRange, Vec<Commit>> for Repository {
             })
             .filter_map(|id| id.ok())
             .filter_map(|id| self.find_commit(id).ok())
-            // This is exactly the same as --no-merge
-            // count == 0 is first commit
-            .filter(|c| c.parent_count() <= 1)
             .map(Commit::from)
             .collect::<Vec<Commit>>();
 
@@ -101,6 +98,7 @@ mod tests {
             "new fun",
             "Test User <test-user@test.com>",
             "Wed Apr 29 16:31:39 2020 +0900",
+            1,
             None,
         )?;
 
@@ -112,6 +110,7 @@ mod tests {
             "add README",
             "Test User <test-user@test.com>",
             "Wed Apr 29 16:29:47 2020 +0900",
+            1,
             None,
         )?;
 

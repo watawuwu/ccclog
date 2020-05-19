@@ -132,6 +132,7 @@ mod tests {
             "test summary",
             "Test User<test-user@test.com>",
             Utc::now(),
+            1,
             None,
             None,
         )?;
