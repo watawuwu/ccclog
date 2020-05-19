@@ -37,14 +37,17 @@ impl Commits {
     }
 
     // TODO refactor
-    pub fn group_by(&self) -> Vec<(ReleaseRange, BTreeMap<CommitType, Vec<&Commit>>)> {
+    pub fn group_by(
+        &self,
+        tag_pattern: &Regex,
+    ) -> Vec<(ReleaseRange, BTreeMap<CommitType, Vec<&Commit>>)> {
         let mut releases: Vec<(ReleaseRange, BTreeMap<CommitType, Vec<&Commit>>)> = Vec::new();
 
         let (obj, vec) =
             self.commits
                 .iter()
                 .fold((None, Vec::new()), |(latest, mut acc), commit| {
-                    match (latest.clone(), commit.tag()) {
+                    match (latest.clone(), commit.name_obj(tag_pattern)) {
                         (Some(latest_obj), Some(current_obj)) => {
                             releases.push((
                                 ReleaseRange::Release(current_obj.clone(), latest_obj),
@@ -93,43 +96,50 @@ impl Commits {
     fn prev_obj(&self) -> NamableObj {
         match self.prev.obj.as_ref() {
             Some(n) => n.clone(),
-            None => NamableObj::new(self.prev.short_hash().as_str(), self.prev.datetime),
+            None => NamableObj::Commit {
+                short_hash: self.prev.short_hash(),
+                datetime: self.prev.datetime,
+            },
         }
     }
 }
-
-// commit hash or tag name(include Lightweight tag)
-#[derive(Debug, Eq, Clone, PartialEq, Hash)]
-pub struct NamableObj {
-    name: String,
-    datetime: DateTime<Utc>,
+#[derive(Debug, Eq, Clone, PartialEq, Hash, PartialOrd, Ord)]
+pub enum NamableObj {
+    Commit {
+        short_hash: String,
+        datetime: DateTime<Utc>,
+    },
+    Tag {
+        name: String,
+        datetime: DateTime<Utc>,
+    },
 }
 
 impl NamableObj {
-    pub fn new(name: &str, datetime: DateTime<Utc>) -> Self {
-        NamableObj {
-            name: name.to_string(),
-            datetime,
+    pub fn name(&self) -> &str {
+        match self {
+            NamableObj::Commit {
+                short_hash: n,
+                datetime: _,
+            } => n.as_str(),
+            NamableObj::Tag {
+                name: n,
+                datetime: _,
+            } => n.as_str(),
         }
     }
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
     pub fn date(&self) -> String {
-        self.datetime.format("%Y-%m-%d").to_string()
-    }
-}
-
-impl PartialOrd for NamableObj {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for NamableObj {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.datetime.cmp(&other.datetime)
+        let datetime = match self {
+            NamableObj::Commit {
+                short_hash: _,
+                datetime: d,
+            } => d,
+            NamableObj::Tag {
+                name: _,
+                datetime: d,
+            } => d,
+        };
+        datetime.format("%Y-%m-%d").to_string()
     }
 }
 
@@ -244,8 +254,12 @@ impl Commit {
         &self.author
     }
 
-    pub(crate) fn tag(&self) -> Option<&NamableObj> {
-        self.obj.as_ref()
+    pub(crate) fn name_obj(&self, pattern: &Regex) -> Option<&NamableObj> {
+        let obj = self.obj.as_ref();
+        match obj {
+            Some(NamableObj::Tag { name, .. }) if pattern.is_match(name) => obj,
+            _ => None,
+        }
     }
 
     pub(crate) fn parent_count(&self) -> usize {
@@ -293,7 +307,7 @@ impl<'a> From<LibCommit<'a>> for Commit {
 
         let obj = desc.map(|x| {
             let name = x.format(None).unwrap_or_default();
-            NamableObj { name, datetime }
+            NamableObj::Tag { name, datetime }
         });
 
         Commit {

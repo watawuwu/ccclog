@@ -2,6 +2,7 @@ use crate::git::version::{Version, Versions};
 use crate::git::{Commit, ScanRange};
 use anyhow::*;
 use git2::Repository;
+use regex::Regex;
 use std::str::FromStr;
 
 pub(super) trait Findable<T, R> {
@@ -39,20 +40,17 @@ impl Findable<ScanRange, Vec<Commit>> for Repository {
 }
 
 pub(super) trait TagFindable {
-    fn versions(&self, tag_prefix: Option<&str>) -> Result<Versions>;
+    fn versions(&self, tag_pattern: &Regex) -> Result<Versions>;
     fn remote_url(&self) -> Option<String>;
 }
 
 impl TagFindable for Repository {
-    fn versions(&self, tag_prefix: Option<&str>) -> Result<Versions> {
+    fn versions(&self, tag_pattern: &Regex) -> Result<Versions> {
         let tags = self.tag_names(None)?;
         let versions = tags
             .into_iter()
             .filter_map(|t| t)
-            .filter(|tag| match tag_prefix {
-                Some(pre) => tag.starts_with(pre),
-                None => true,
-            })
+            .filter(|t| tag_pattern.is_match(t))
             .filter_map(|t| Version::from_str(t).ok())
             .collect::<Versions>();
         Ok(versions)
@@ -70,13 +68,14 @@ impl TagFindable for Repository {
 mod tests {
     use super::*;
     use crate::git::tests::*;
+    use crate::git::SEMVER_PATTERN;
 
     #[test]
     fn semantic_tags_ok() -> Result<()> {
         let git_dir = git_dir()?;
         let repo = Repository::open(git_dir)?;
 
-        let versions = repo.versions(None)?;
+        let versions = repo.versions(&SEMVER_PATTERN)?;
         let expect = vec![Version::from_str("0.1.0")?, Version::from_str("0.2.0")?]
             .into_iter()
             .collect::<Versions>();

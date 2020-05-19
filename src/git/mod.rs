@@ -15,6 +15,9 @@ use repository::{Findable, TagFindable};
 pub use commit::*;
 pub use conventional_commit::*;
 pub use github_url::GithubUrl;
+pub use version::SEMVER_PATTERN;
+
+use regex::Regex;
 use version::*;
 
 pub fn repo<P: AsRef<Path>>(path: P) -> Result<Repository> {
@@ -26,11 +29,11 @@ pub fn gurl(repo: &Repository) -> Option<GithubUrl> {
     url.map(|u| GithubUrl::new(u.as_str()))
 }
 
-pub fn commits(repo: &Repository, spec: Option<&str>, tag_prefix: Option<&str>) -> Result<Commits> {
+pub fn commits(repo: &Repository, spec: Option<&str>, tag_pattern: &Regex) -> Result<Commits> {
     let range = match spec {
         Some(s) => parse_range(repo, s)?,
         None => {
-            let mut versions = repo.versions(tag_prefix)?;
+            let mut versions = repo.versions(tag_pattern)?;
             detect_range(repo, &mut versions)?
         }
     };
@@ -122,7 +125,10 @@ pub(crate) mod tests {
         let datetime = DateTime::parse_from_str(datetime, "%a %b %d %H:%M:%S %Y %z")?;
         let datetime = datetime.with_timezone(&Utc);
         let id = Oid::from_str(id)?;
-        let tag = tag.map(|t| NamableObj::new(t, datetime));
+        let tag = tag.map(|x| NamableObj::Tag {
+            name: String::from(x),
+            datetime,
+        });
 
         let commit = Commit::new(id, &summary, author, datetime, parent_count, Some(cc), tag)?;
 
@@ -139,7 +145,10 @@ pub(crate) mod tests {
         let datetime = DateTime::parse_from_str(datetime, "%a %b %d %H:%M:%S %Y %z")?;
         let datetime = datetime.with_timezone(&Utc);
         let id = Oid::from_str(id)?;
-        let tag = tag.map(|t| NamableObj::new(t, datetime));
+        let tag = tag.map(|x| NamableObj::Tag {
+            name: String::from(x),
+            datetime,
+        });
         let commit = Commit::new(id, summary, author, datetime, 1, None, tag)?;
 
         Ok(commit)

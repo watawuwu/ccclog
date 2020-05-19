@@ -99,7 +99,8 @@ impl FromStr for ConventionalCommits {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         lazy_static! {
             static ref CONVENTIONAL_COMMIT_PATTERN: Regex =
-                Regex::new(r"^(?P<type>.+?)(?P<scope>\(.+?\))?!?: (?P<description>.+?)$").unwrap();
+                Regex::new(r"^(?P<type>[a-zA-Z-_]+?)(?P<scope>\(.+?\))?!?: (?P<description>.+?)$")
+                    .unwrap();
         }
         let lines = s.splitn(2, '\n').collect::<Vec<&str>>();
         let (summary, body) = if lines.len() == 2 {

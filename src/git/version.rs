@@ -10,6 +10,8 @@ use std::str::FromStr;
 lazy_static! {
     static ref PREFIX: Regex =
         Regex::new(r"^(?P<prefix>.*?)(?P<version>[0-9]+?.[0-9]+?.[0-9]+?(?:.*)$)").unwrap();
+    pub static ref SEMVER_PATTERN: Regex =
+        Regex::new(r#"^v?\d+?.\d+?.\d+?(\-[\w.-]+?)?(\+[\w.-]+?)?$"#).unwrap();
 }
 
 #[derive(Clone, Debug, PartialEq, PartialOrd, Ord, Eq)]

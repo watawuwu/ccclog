@@ -18,7 +18,7 @@ fn run(args: Vec<String>) -> Result<String> {
     debug!("args: {:?}", args);
 
     let repo = git::repo(&args.path)?;
-    let commits = git::commits(&repo, args.revspec(), args.tag_prefix.as_deref())?;
+    let commits = git::commits(&repo, args.revspec(), &args.tag_pattern)?;
 
     let config = Config {
         enable_email_link: args.enable_email_link,
@@ -29,7 +29,7 @@ fn run(args: Vec<String>) -> Result<String> {
     };
     let changelog = Changelog::from(config);
     let url = git::gurl(&repo);
-    let markdown = changelog.markdown(url.as_ref(), &commits)?;
+    let markdown = changelog.markdown(url.as_ref(), &commits, &args.tag_pattern)?;
     Ok(markdown)
 }
 
