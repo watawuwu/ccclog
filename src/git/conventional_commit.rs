@@ -21,8 +21,8 @@ pub enum CommitType {
     Test,
     Revert,
     Security,
-    Others,
     Custom(String),
+    Others,
 }
 
 // Not available EnumString for custom type

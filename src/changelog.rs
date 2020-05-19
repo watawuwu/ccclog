@@ -370,6 +370,28 @@ mod tests {
         )?;
         commits.push(commit);
 
+        let commit = dummy_commit(
+            "ad185faf719f12292414c88872e3397fc5dc4e62",
+            "custom",
+            None,
+            false,
+            "add custom",
+            "Test User <test-user@test.com>",
+            "Wed Apr 01 01:01:01 2020 +0000",
+            1,
+            None,
+        )?;
+        commits.push(commit);
+
+        let commit = dummy_invalid_commit(
+            "1d185faf719f12292414c88872e3397fc5dc4e62",
+            "add other",
+            "Test User <test-user1@test.com>",
+            "Wed Apr 01 01:01:01 2020 +0000",
+            None,
+        )?;
+        commits.push(commit);
+
         let prev = prev()?;
         let cms = Commits::new(prev, commits);
         let gurl = GithubUrl::new("https://github.com/watawuwu/ccclog.git");
@@ -412,6 +434,12 @@ mod tests {
 ### Security
 - [[2e185fa]] fix security (Test User12)
 
+### Custom
+- [[ad185fa]] add custom (Test User)
+
+### Others
+- [[1d185fa]] add other (Test User)
+
 [0.2.0]: https://github.com/watawuwu/ccclog/compare/0.0.0...0.2.0
 [1d185fa]: https://github.com/watawuwu/ccclog/commit/1d185faf719f12292414c88872e3397fc5dc4e62
 [2d185fa]: https://github.com/watawuwu/ccclog/commit/2d185faf719f12292414c88872e3397fc5dc4e62
@@ -425,6 +453,8 @@ mod tests {
 [0e185fa]: https://github.com/watawuwu/ccclog/commit/0e185faf719f12292414c88872e3397fc5dc4e62
 [1e185fa]: https://github.com/watawuwu/ccclog/commit/1e185faf719f12292414c88872e3397fc5dc4e62
 [2e185fa]: https://github.com/watawuwu/ccclog/commit/2e185faf719f12292414c88872e3397fc5dc4e62
+[ad185fa]: https://github.com/watawuwu/ccclog/commit/ad185faf719f12292414c88872e3397fc5dc4e62
+[1d185fa]: https://github.com/watawuwu/ccclog/commit/1d185faf719f12292414c88872e3397fc5dc4e62
 "#;
         assert_eq!(markdown, expected);
         Ok(())
