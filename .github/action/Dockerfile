@@ -1,5 +1,4 @@
-FROM watawuwu/ccclog:0.1.1
+FROM watawuwu/ccclog:0.3
 
 COPY entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
-
