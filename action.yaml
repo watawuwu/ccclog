@@ -8,6 +8,10 @@ inputs:
   revision_spec:
     description: 'Revision spec. Ref to https://git-scm.com/book/en/v2/Git-Tools-Revision-Selection'
     required: false
+  options:
+    description: 'CLI options. Ref to https://github.com/watawuwu/ccclog'
+    required: false
+
 outputs:
   changelog:
     description: 'Changelog'
@@ -17,4 +21,4 @@ runs:
   args:
   - ${{ inputs.repo_path }}
   - ${{ inputs.revision_spec }}
-
+  - ${{ inputs.options }}

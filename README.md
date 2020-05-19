@@ -70,6 +70,11 @@ Working directory of git.
 
 Revision spec. Ref to https://git-scm.com/book/en/v2/Git-Tools-Revision-Selection
 
+#### `options`
+
+ccclog command option. Options that can be specified on the command line can be specified as they are (multiple options allowed).
+ex) `--reverse  --tag-pattern='prefix-.+'`
+
 ### Outputs
 
 #### `changelog`
@@ -111,6 +116,7 @@ jobs:
       # with:
       #   repo_path: "."
       #   revision_spec: "..HEAD"
+      #   options: '--ignore-summary="cargo release.+" --root-indent-level=3 --tag-pattern="component-v"'
 
     # You can also exec the binary
     # - name: Create Changelog
