@@ -49,12 +49,10 @@ OPTIONS:
             Ignore commit type. ex) feat|fix|build|doc|chore|ci|style|refactor|perf|test
 
     -i, --root-indent-level <root-indent-level>    Change markdown root subject indent [default: 2]
-    -m, --tag-pattern <tag-pattern>
-            Regular expression that matches the tag [default: ^v?\d+?.\d+?.\d+?(\-[\w.-]+?)?(\+[\w.-]+?)?$]
-
+    -p, --tag-prefix <tag-prefix>                  If there are multiple tag formats, specify the target prefix
 
 ARGS:
-    <REPO_PATH>        Working directory of git [default: ]
+    <REPO_PATH>        Working directory of git [default: .]
     <REVISION_SPEC>    Revision spec. Ref to https://git-scm.com/book/en/v2/Git-Tools-Revision-Selection
 ```
 
@@ -73,7 +71,7 @@ Revision spec. Ref to https://git-scm.com/book/en/v2/Git-Tools-Revision-Selectio
 #### `options`
 
 ccclog command option. Options that can be specified on the command line can be specified as they are (multiple options allowed).
-ex) `--reverse  --tag-pattern='prefix-.+'`
+ex) `--reverse  --tag-prefix=prefix-v`
 
 ### Outputs
 
@@ -116,7 +114,7 @@ jobs:
       # with:
       #   repo_path: "."
       #   revision_spec: "..HEAD"
-      #   options: '--root-indent-level=3 --tag-pattern=component-v --ignore-summary=cargo\srelease.+'
+      #   options: '--root-indent-level=3 --tag-prefix=component-v --ignore-summary=cargo\srelease.+'
 
     # You can also exec the binary
     # - name: Create Changelog
