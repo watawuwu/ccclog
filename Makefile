@@ -93,8 +93,8 @@ clippy: ## Run clippy
 	$(CARGO_COMMAND) clippy --all-features -- -D warnings
 
 gen-test-data:
-	tar acvf tests/assets/git-data1.tar.gz -C tests/assets git-data1
-	tar acvf tests/assets/git-data2.tar.gz -C tests/assets git-data2
+	find tests/assets  -maxdepth 1 -mindepth 1 -type d  | \
+	  while read -r p; do tar acf $$p.tar.gz -C $$(dirname $$p) $$(basename $$p); done
 
 publish:
 ifeq ($(LEVEL),)

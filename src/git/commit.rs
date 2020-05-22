@@ -8,6 +8,7 @@ use std::cmp::Ordering;
 use std::convert::From;
 use std::hash::Hash;
 
+use crate::git::version::Version;
 use crate::git::CommitType;
 use anyhow::*;
 use lazy_static::*;
@@ -39,7 +40,7 @@ impl Commits {
     // TODO refactor
     pub fn group_by(
         &self,
-        tag_pattern: &Regex,
+        tag_prefix: Option<&str>,
     ) -> Vec<(ReleaseRange, BTreeMap<CommitType, Vec<&Commit>>)> {
         let mut releases: Vec<(ReleaseRange, BTreeMap<CommitType, Vec<&Commit>>)> = Vec::new();
 
@@ -47,7 +48,7 @@ impl Commits {
             self.commits
                 .iter()
                 .fold((None, Vec::new()), |(latest, mut acc), commit| {
-                    match (latest.clone(), commit.name_obj(tag_pattern)) {
+                    match (latest.clone(), commit.name_obj(tag_prefix)) {
                         (Some(latest_obj), Some(current_obj)) => {
                             releases.push((
                                 ReleaseRange::Release(current_obj.clone(), latest_obj),
@@ -110,22 +111,23 @@ pub enum NamableObj {
         datetime: DateTime<Utc>,
     },
     Tag {
-        name: String,
+        version: Version,
         datetime: DateTime<Utc>,
     },
 }
 
 impl NamableObj {
-    pub fn name(&self) -> &str {
+    // TODO return to &str
+    pub fn name(&self) -> String {
         match self {
             NamableObj::Commit {
                 short_hash: n,
                 datetime: _,
-            } => n.as_str(),
+            } => n.clone(),
             NamableObj::Tag {
-                name: n,
+                version: v,
                 datetime: _,
-            } => n.as_str(),
+            } => v.to_string(),
         }
     }
     pub fn date(&self) -> String {
@@ -135,7 +137,7 @@ impl NamableObj {
                 datetime: d,
             } => d,
             NamableObj::Tag {
-                name: _,
+                version: _,
                 datetime: d,
             } => d,
         };
@@ -254,10 +256,17 @@ impl Commit {
         &self.author
     }
 
-    pub(crate) fn name_obj(&self, pattern: &Regex) -> Option<&NamableObj> {
+    pub(crate) fn name_obj(&self, prefix: Option<&str>) -> Option<&NamableObj> {
         let obj = self.obj.as_ref();
-        match obj {
-            Some(NamableObj::Tag { name, .. }) if pattern.is_match(name) => obj,
+        match (obj, prefix) {
+            (Some(NamableObj::Tag { version, .. }), Some(pre)) => {
+                if version.starts_with(pre) {
+                    obj
+                } else {
+                    None
+                }
+            }
+            (Some(NamableObj::Tag { .. }), _) => obj,
             _ => None,
         }
     }
@@ -305,9 +314,13 @@ impl<'a> From<LibCommit<'a>> for Commit {
             )
             .ok();
 
-        let obj = desc.map(|x| {
+        let obj = desc.and_then(|x| {
             let name = x.format(None).unwrap_or_default();
-            NamableObj::Tag { name, datetime }
+            let version = Version::from_str(name.as_str()).ok();
+            version.map(|x| NamableObj::Tag {
+                version: x,
+                datetime,
+            })
         });
 
         Commit {
@@ -357,7 +370,7 @@ mod tests {
 
     #[test]
     fn find_by_ok() -> Result<()> {
-        let git_dir = git_dir()?;
+        let git_dir = git_dir(1)?;
         let repo = Repository::open(git_dir)?;
         let version = Version::from_str("0.1.0")?;
 

@@ -30,12 +30,11 @@ pub struct Args {
     )]
     pub ignore_types: Option<Vec<CommitType>>,
     #[structopt(
-        short = "m",
+        short = "p",
         long,
-        default_value = r#"^v?\d+?.\d+?.\d+?(\-[\w.-]+?)?(\+[\w.-]+?)?$"#,
-        help = "Regular expression that matches the tag"
+        help = "If there are multiple tag formats, specify the target prefix"
     )]
-    pub tag_pattern: Regex,
+    pub tag_prefix: Option<String>,
     #[structopt(
         name = "REPO_PATH",
         default_value = ".",

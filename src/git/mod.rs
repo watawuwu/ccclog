@@ -15,9 +15,7 @@ use repository::{Findable, TagFindable};
 pub use commit::*;
 pub use conventional_commit::*;
 pub use github_url::GithubUrl;
-pub use version::SEMVER_PATTERN;
 
-use regex::Regex;
 use version::*;
 
 pub fn repo<P: AsRef<Path>>(path: P) -> Result<Repository> {
@@ -29,11 +27,11 @@ pub fn gurl(repo: &Repository) -> Option<GithubUrl> {
     url.map(|u| GithubUrl::new(u.as_str()))
 }
 
-pub fn commits(repo: &Repository, spec: Option<&str>, tag_pattern: &Regex) -> Result<Commits> {
+pub fn commits(repo: &Repository, spec: Option<&str>, tag_prefix: Option<&str>) -> Result<Commits> {
     let range = match spec {
         Some(s) => parse_range(repo, s)?,
         None => {
-            let mut versions = repo.versions(tag_pattern)?;
+            let mut versions = repo.versions(tag_prefix)?;
             detect_range(repo, &mut versions)?
         }
     };
@@ -91,15 +89,25 @@ pub(crate) mod tests {
     use tempdir::TempDir;
 
     const GIT_DATA1: &[u8] = include_bytes!("../../tests/assets/git-data1.tar.gz");
+    const GIT_DATA2: &[u8] = include_bytes!("../../tests/assets/git-data2.tar.gz");
+    const GIT_DATA3: &[u8] = include_bytes!("../../tests/assets/git-data3.tar.gz");
+    const GIT_DATA4: &[u8] = include_bytes!("../../tests/assets/git-data4.tar.gz");
 
-    pub fn git_dir() -> Result<PathBuf> {
+    pub fn git_dir(num: u8) -> Result<PathBuf> {
+        let buf = match num {
+            1 => GIT_DATA1.as_ref(),
+            2 => GIT_DATA2.as_ref(),
+            3 => GIT_DATA3.as_ref(),
+            4 => GIT_DATA4.as_ref(),
+            _ => bail!("Not found test git data"),
+        };
         let tmp_dir = TempDir::new("")?;
         let prefix = tmp_dir.into_path();
 
-        let tar = GzDecoder::new(GIT_DATA1.as_ref());
+        let tar = GzDecoder::new(buf);
         let mut archive = Archive::new(tar);
         archive.unpack(&prefix)?;
-        Ok(prefix.join("git-data1"))
+        Ok(prefix.join(format!("git-data{}", num)))
     }
 
     pub fn dummy_commit(
@@ -126,7 +134,7 @@ pub(crate) mod tests {
         let datetime = datetime.with_timezone(&Utc);
         let id = Oid::from_str(id)?;
         let tag = tag.map(|x| NamableObj::Tag {
-            name: String::from(x),
+            version: Version::from_str(x).unwrap(),
             datetime,
         });
 
@@ -146,7 +154,7 @@ pub(crate) mod tests {
         let datetime = datetime.with_timezone(&Utc);
         let id = Oid::from_str(id)?;
         let tag = tag.map(|x| NamableObj::Tag {
-            name: String::from(x),
+            version: Version::from_str(x).unwrap(),
             datetime,
         });
         let commit = Commit::new(id, summary, author, datetime, 1, None, tag)?;
@@ -217,9 +225,48 @@ pub(crate) mod tests {
 
     #[test]
     fn get_ok() -> Result<()> {
-        let git_dir = git_dir()?;
+        let git_dir = git_dir(1)?;
         let repo = repo(git_dir);
         assert!(repo.is_ok());
+        Ok(())
+    }
+
+    #[test]
+    fn detect_range_ok() -> Result<()> {
+        let git_dir = git_dir(3)?;
+        let repo = repo(git_dir)?;
+
+        let mut versions = Versions::from(vec![
+            Version::from_str("1.0.0")?,
+            Version::from_str("1.1.0")?,
+        ]);
+
+        let a = detect_range(&repo, &mut versions)?;
+        let latest = dummy_commit(
+            "cd3354bedd0c7b66a899d27a2e66ff41594df0b1",
+            "feat",
+            None,
+            false,
+            "8",
+            "Test User <test-user@test.com>",
+            "Thu May 21 21:54:57 2020 +0900",
+            1,
+            Some("1.1.0"),
+        )?;
+        let prev = dummy_commit(
+            "9a5e72a6ade1f3b6975711f3bf05a82f1793c0b4",
+            "feat",
+            None,
+            false,
+            "7",
+            "Test User <test-user@test.com>",
+            "Thu May 21 21:54:46 2020 +0900",
+            1,
+            Some("1.0.0"),
+        )?;
+        let e = ScanRange::new(Some(latest), prev);
+
+        assert_eq!(a, e);
         Ok(())
     }
 }

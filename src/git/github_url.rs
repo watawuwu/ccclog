@@ -20,7 +20,7 @@ impl GithubUrl {
             "{}/compare/{}...{}",
             self.base_url,
             start.name(),
-            end.map_or_else(|| "HEAD", |tag| tag.name())
+            end.map_or_else(|| String::from("HEAD"), |tag| tag.name())
         )
     }
 
@@ -64,10 +64,12 @@ fn git2http(url: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::git::version::Version;
     use crate::git::NamableObj;
     use anyhow::*;
     use chrono::Utc;
     use git2::Oid;
+    use std::str::FromStr;
 
     #[test]
     fn ssh_ok() {
@@ -114,11 +116,11 @@ mod tests {
 
         let datetime = Utc::now();
         let start = NamableObj::Tag {
-            name: String::from("0.1.0"),
+            version: Version::from_str("0.1.0")?,
             datetime,
         };
         let end = NamableObj::Tag {
-            name: String::from("0.3.0"),
+            version: Version::from_str("0.3.0")?,
             datetime,
         };
 
