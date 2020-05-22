@@ -25,7 +25,7 @@ jobs:
     - name: Create Changelog
       id: create_changelog
       run: |
-        changelog="$(cargo run)"
+        changelog="$(cargo run -- --ignore-summary=cargo-release)"
         changelog="${changelog//$'\n'/'%0A'}"
         echo "::set-output name=changelog::$changelog"
 
