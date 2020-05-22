@@ -29,6 +29,60 @@ Generate changelog from commit messages created by [Conventional Commits](https:
 [e4cff17]: https://github.com/watawuwu/ccclog/commit/e4cff17b4c8b7103cea4e36eb34dd539937af4ba
 ```
 
+### USAGE
+
+- `ccclog [FLAGS] [OPTIONS] [--] <REPO_PATH> <REVISION_SPEC>`
+
+### ARGS:
+
+#### `<REPO_PATH>`
+
+Specify the git repository.  
+default: If this argument is omitted, the repository in the current directory will be the target.
+
+#### `<REVISION_SPEC>`
+
+If this argument is specified, it becomes the `Specified range mode`, and if omitted, it becomes the `Autodetected range mode`.
+
+🧪 `Specified range mode`(experimental)
+
+Specify the git revisions specifications.  
+For details of specifications, refer to the [official document](https://git-scm.com/book/en/v2/Git-Tools-Revision-Selection) or gitrevisions(7) man page.
+Currently, triple dot cannot be used. **In the future, we plan to focus on support for tags(include lightweight tag) and HEAD word only**.
+
+ex)
+
+- v2.1.0..v2.2.0
+- v1.1.0..HEAD
+- 0.0.0..1.0.0
+- web-v2.1.0..web-v2.1.1
+
+:sunny: `Autodetected range mode`
+
+In this mode, it collects tags with the [SemVer](http://semver.org/), detects the latest tag and the tag before it, and scans the commit of the difference.
+
+It works even if the semver format has a prefix. For example, you can use the customary `v` prefix, as well as any string such as a component name.
+
+ex)
+
+- Repository tags: v1.0.0, v1.1.0, v1.2.0, v1.3.0
+    - => v1.2.0..v1.3.0
+- Repository tags: http-v2.3.0, http-v2.3.1, http-v2.3.2
+    - => http-v2.3.1..http-v2.3.2
+
+If you have tags with multiple prefixes, they have the following precedence:
+
+0. If there is a tag without a prefix, scan it
+0. If there is a tag with `v` prefix, scan it
+0. Without the above tag, there will be multiple prefixed tags and it will not be possible to determine the range to be automatically scanned, resulting in an error.
+
+If there are multiple prefixed tags, you need to specify the `--tag-prefix` option to clarify the tags to scan.
+
+- Repository tags: auth-v1.0.0, auth-v1.1.0, build-v1.0.0, build-v1.1.0
+    - => `ccclog`: return error
+    - => `ccclog --tag-prefix=auth-v`: auth-v1.0.0..auth-v1.1.0
+    - => `ccclog --tag-prefix=build-v`: build-v1.0.0..build-v1.1.0
+
 - Other usage
 
 ```txt
@@ -62,11 +116,11 @@ ARGS:
 
 #### `repo_path`
 
-Working directory of git.
+Ref to `<REPO_PATH>`
 
 #### `revision_spec`
 
-Revision spec. Ref to https://git-scm.com/book/en/v2/Git-Tools-Revision-Selection
+Ref to `<REVISION_SPEC>`
 
 #### `options`
 
