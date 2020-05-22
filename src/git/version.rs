@@ -1,4 +1,5 @@
 use anyhow::*;
+use itertools::Itertools;
 use lazy_static::*;
 use log::*;
 use regex::Regex;
@@ -10,14 +11,18 @@ use std::str::FromStr;
 lazy_static! {
     static ref PREFIX: Regex =
         Regex::new(r"^(?P<prefix>.*?)(?P<version>[0-9]+?.[0-9]+?.[0-9]+?(?:.*)$)").unwrap();
-    pub static ref SEMVER_PATTERN: Regex =
-        Regex::new(r#"^v?\d+?.\d+?.\d+?(\-[\w.-]+?)?(\+[\w.-]+?)?$"#).unwrap();
 }
 
-#[derive(Clone, Debug, PartialEq, PartialOrd, Ord, Eq)]
-pub(super) struct Version {
+#[derive(Clone, Debug, PartialEq, PartialOrd, Ord, Eq, Hash)]
+pub struct Version {
     prefix: String,
     ver: SemVer,
+}
+
+impl Version {
+    pub fn starts_with(&self, pre: &str) -> bool {
+        self.prefix.starts_with(pre)
+    }
 }
 
 impl FromStr for Version {
@@ -53,11 +58,16 @@ impl fmt::Display for Version {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub(super) struct Versions(Vec<Version>);
+pub struct Versions(Vec<Version>);
 
 impl Versions {
     fn new() -> Versions {
         Versions(Vec::new())
+    }
+
+    #[cfg(test)]
+    pub(super) fn from(vec: Vec<Version>) -> Versions {
+        Versions(vec)
     }
 
     fn add(&mut self, elem: Version) {
@@ -71,6 +81,43 @@ impl Versions {
         let latest_tag = it.next();
         let previous_tag = it.next();
         (latest_tag, previous_tag)
+    }
+
+    pub fn prefix(&self) -> Vec<&str> {
+        self.0.iter().map(|x| x.prefix.as_str()).unique().collect()
+    }
+
+    pub fn select(self, prefix: Option<&str>) -> Self {
+        if let Some(pre) = prefix {
+            return self
+                .0
+                .into_iter()
+                .filter(|x| x.prefix == pre)
+                .collect::<Versions>();
+        }
+
+        let prefix = "";
+        if self.has_prefix(prefix) {
+            return self.filter(prefix);
+        }
+
+        let prefix = "v";
+        if self.has_prefix(prefix) {
+            return self.filter(prefix);
+        }
+
+        self
+    }
+
+    fn filter(self, prefix: &str) -> Self {
+        self.0
+            .into_iter()
+            .filter(|x| x.prefix == prefix)
+            .collect::<Versions>()
+    }
+
+    fn has_prefix(&self, prefix: &str) -> bool {
+        self.0.iter().any(|x| x.prefix == prefix)
     }
 }
 
@@ -103,6 +150,24 @@ mod tests {
     }
 
     #[test]
+    fn latest_range_ng() -> Result<()> {
+        let expected = Version::from_str("0.2.0")?;
+        let mut versions = vec![expected.clone()].into_iter().collect::<Versions>();
+
+        let (latest, prev) = versions.latest_range();
+        assert_eq!(prev, None);
+        assert_eq!(latest, Some(&expected));
+
+        let mut versions = Vec::new().into_iter().collect::<Versions>();
+
+        let (latest, prev) = versions.latest_range();
+        assert_eq!(prev, None);
+        assert_eq!(latest, None);
+
+        Ok(())
+    }
+
+    #[test]
     fn parse_ok() -> Result<()> {
         let a = Version::from_str("0.2.0")?;
         assert!(a.prefix.is_empty());
@@ -119,6 +184,60 @@ mod tests {
         let a = Version::from_str("product-0.2.0")?;
         assert_eq!(a.prefix, "product-");
         assert_eq!(a.to_string(), "product-0.2.0");
+
+        Ok(())
+    }
+
+    fn dummy_versions(vs: Vec<&str>) -> Result<Versions> {
+        let v = vs
+            .into_iter()
+            .map(Version::from_str)
+            .collect::<Result<Vec<Version>>>()?;
+        Ok(Versions::from(v))
+    }
+
+    #[test]
+    fn prefix_count_ok() -> Result<()> {
+        let a = dummy_versions(vec!["0.1.0", "v0.2.0", "prefix-0.2.0", "test-0.2.0"])?;
+        assert_eq!(a.prefix(), vec!["", "v", "prefix-", "test-"]);
+
+        let a = dummy_versions(Vec::new())?;
+        assert_eq!(a.prefix().iter().count(), 0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn select_ok() -> Result<()> {
+        let versions = dummy_versions(vec!["0.1.0", "v0.2.0", "prefix-0.2.0", "test-0.2.0"])?;
+
+        let a = versions.clone();
+        let e = dummy_versions(vec!["0.1.0"])?;
+        assert_eq!(a.select(Some("")), e);
+
+        let a = versions.clone();
+        let e = dummy_versions(vec!["v0.2.0"])?;
+        assert_eq!(a.select(Some("v")), e);
+
+        let a = versions.clone();
+        let e = dummy_versions(vec!["prefix-0.2.0"])?;
+        assert_eq!(a.select(Some("prefix-")), e);
+
+        let a = versions.clone();
+        let e = dummy_versions(vec!["test-0.2.0"])?;
+        assert_eq!(a.select(Some("test-")), e);
+
+        let a = versions.clone();
+        let e = dummy_versions(vec!["0.1.0"])?;
+        assert_eq!(a.select(None), e);
+
+        let a = dummy_versions(vec!["v0.2.0", "prefix-0.2.0", "test-0.2.0"])?;
+        let e = dummy_versions(vec!["v0.2.0"])?;
+        assert_eq!(a.select(None), e);
+
+        let a = dummy_versions(vec!["prefix-0.2.0", "test-0.2.0"])?;
+        let e = dummy_versions(vec!["prefix-0.2.0", "test-0.2.0"])?;
+        assert_eq!(a.select(None), e);
 
         Ok(())
     }

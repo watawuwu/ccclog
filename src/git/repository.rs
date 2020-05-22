@@ -2,7 +2,6 @@ use crate::git::version::{Version, Versions};
 use crate::git::{Commit, ScanRange};
 use anyhow::*;
 use git2::Repository;
-use regex::Regex;
 use std::str::FromStr;
 
 pub(super) trait Findable<T, R> {
@@ -40,19 +39,25 @@ impl Findable<ScanRange, Vec<Commit>> for Repository {
 }
 
 pub(super) trait TagFindable {
-    fn versions(&self, tag_pattern: &Regex) -> Result<Versions>;
+    fn versions(&self, tag_prefix: Option<&str>) -> Result<Versions>;
     fn remote_url(&self) -> Option<String>;
 }
 
 impl TagFindable for Repository {
-    fn versions(&self, tag_pattern: &Regex) -> Result<Versions> {
+    fn versions(&self, tag_prefix: Option<&str>) -> Result<Versions> {
         let tags = self.tag_names(None)?;
-        let versions = tags
+        let versions: Versions = tags
             .into_iter()
-            .filter_map(|t| t)
-            .filter(|t| tag_pattern.is_match(t))
-            .filter_map(|t| Version::from_str(t).ok())
-            .collect::<Versions>();
+            .filter_map(|x| x)
+            .filter_map(|x| Version::from_str(x).ok())
+            .collect();
+
+        let versions = versions.select(tag_prefix);
+        let prefix = versions.prefix();
+        if prefix.iter().count() > 1 {
+            bail!("There are two or more Semantic version styles. Please specify and specify the tag-prefix option. ex) --tag-prefix={}", prefix.get(0).unwrap());
+        }
+
         Ok(versions)
     }
 
@@ -68,25 +73,75 @@ impl TagFindable for Repository {
 mod tests {
     use super::*;
     use crate::git::tests::*;
-    use crate::git::SEMVER_PATTERN;
 
     #[test]
-    fn semantic_tags_ok() -> Result<()> {
-        let git_dir = git_dir()?;
-        let repo = Repository::open(git_dir)?;
-
-        let versions = repo.versions(&SEMVER_PATTERN)?;
+    fn versions_ok() -> Result<()> {
+        let repo = Repository::open(git_dir(1)?)?;
+        let versions = repo.versions(None)?;
         let expect = vec![Version::from_str("0.1.0")?, Version::from_str("0.2.0")?]
             .into_iter()
             .collect::<Versions>();
-
         assert_eq!(versions, expect);
+
+        let repo = Repository::open(git_dir(3)?)?;
+        let versions = repo.versions(Some("v"))?;
+        let expect = vec![
+            Version::from_str("v0.1.0")?,
+            Version::from_str("v0.2.0")?,
+            Version::from_str("v0.3.0")?,
+        ]
+        .into_iter()
+        .collect::<Versions>();
+        assert_eq!(versions, expect);
+
+        let versions = repo.versions(Some("component-v"))?;
+        let expect = vec![
+            Version::from_str("component-v0.1.0")?,
+            Version::from_str("component-v0.2.0")?,
+        ]
+        .into_iter()
+        .collect::<Versions>();
+        assert_eq!(versions, expect);
+
+        let versions = repo.versions(None)?;
+        let expect = vec![Version::from_str("1.0.0")?, Version::from_str("1.1.0")?]
+            .into_iter()
+            .collect::<Versions>();
+        assert_eq!(versions, expect);
+
         Ok(())
     }
 
     #[test]
-    fn find_by_scan_range_ok() -> Result<()> {
-        let git_dir = git_dir()?;
+    fn versions_ng() -> Result<()> {
+        let repo = Repository::open(git_dir(4)?)?;
+        let versions = repo.versions(Some("aaa-v"))?;
+        let expect = vec![
+            Version::from_str("aaa-v0.1.0")?,
+            Version::from_str("aaa-v0.2.0")?,
+        ]
+        .into_iter()
+        .collect::<Versions>();
+        assert_eq!(versions, expect);
+
+        let versions = repo.versions(Some("bbb-v"))?;
+        let expect = vec![
+            Version::from_str("bbb-v0.1.0")?,
+            Version::from_str("bbb-v0.2.0")?,
+        ]
+        .into_iter()
+        .collect::<Versions>();
+        assert_eq!(versions, expect);
+
+        let versions = repo.versions(None);
+        assert!(versions.is_err());
+
+        Ok(())
+    }
+
+    #[test]
+    fn find_by_ok() -> Result<()> {
+        let git_dir = git_dir(1)?;
         let repo = Repository::open(git_dir)?;
 
         let latest = dummy_commit(

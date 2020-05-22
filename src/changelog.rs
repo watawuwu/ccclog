@@ -46,7 +46,7 @@ impl Changelog {
         &self,
         url: Option<&GithubUrl>,
         commits: &Commits,
-        tag_pattern: &Regex,
+        tag_prefix: Option<&str>,
     ) -> Result<String> {
         let mut links = Vec::new();
 
@@ -65,7 +65,7 @@ impl Changelog {
         };
 
         let changelog = commits
-            .group_by(tag_pattern)
+            .group_by(tag_prefix)
             .into_iter()
             .map(func)
             .join("\n");
@@ -218,7 +218,6 @@ mod tests {
 
     use super::*;
     use crate::git::tests::*;
-    use crate::git::SEMVER_PATTERN;
 
     #[test]
     fn all_commit_type_ok() -> Result<()> {
@@ -405,7 +404,7 @@ mod tests {
         let cms = Commits::new(prev, commits);
         let gurl = GithubUrl::new("https://github.com/watawuwu/ccclog.git");
         let changelog = Changelog::new();
-        let markdown = changelog.markdown(Some(&gurl), &cms, &SEMVER_PATTERN)?;
+        let markdown = changelog.markdown(Some(&gurl), &cms, None)?;
         let expected = r#"## [0.2.0] - 2020-04-01
 ### Feat
 - [[1d185fa]] add README (Test User1)
@@ -515,7 +514,7 @@ mod tests {
         let cms = Commits::new(prev, commits);
         let changelog = Changelog::new();
         let gurl = GithubUrl::new("https://github.com/watawuwu/ccclog.git");
-        let markdown = changelog.markdown(Some(&gurl), &cms, &SEMVER_PATTERN)?;
+        let markdown = changelog.markdown(Some(&gurl), &cms, None)?;
         let expected = r#"## [1.0.0] - 2020-04-01
 ### Feat
 - [[3d185fa]] add feat3 (Test User3)
@@ -590,7 +589,7 @@ mod tests {
         let cms = Commits::new(prev, commits);
         let changelog = Changelog::new();
         let gurl = GithubUrl::new("https://github.com/watawuwu/ccclog.git");
-        let markdown = changelog.markdown(Some(&gurl), &cms, &SEMVER_PATTERN)?;
+        let markdown = changelog.markdown(Some(&gurl), &cms, None)?;
         let expected = r#"## [0.2.0] - 2020-04-01
 ### Feat
 - [[4d185fa]] add 4 (Test User)
@@ -616,7 +615,7 @@ mod tests {
         };
 
         let changelog = Changelog::from(conf);
-        let markdown = changelog.markdown(Some(&gurl), &cms, &SEMVER_PATTERN)?;
+        let markdown = changelog.markdown(Some(&gurl), &cms, None)?;
         let expected = r#"## [0.2.0] - 2020-04-01
 ### Feat
 - [[3d185fa]] add 3 (Test User)
@@ -660,7 +659,7 @@ mod tests {
         let prev = prev()?;
         let cms = Commits::new(prev, commits);
         let gurl = GithubUrl::new("https://github.com/watawuwu/ccclog.git");
-        let markdown = changelog.markdown(Some(&gurl), &cms, &SEMVER_PATTERN)?;
+        let markdown = changelog.markdown(Some(&gurl), &cms, None)?;
         let expected = r#"## [Unreleased]
 ### Feat
 - [[1d185fa]] add first (Test User)
@@ -705,7 +704,7 @@ mod tests {
         let cms = Commits::new(prev, commits);
         let changelog = Changelog::new();
         let gurl = GithubUrl::new("https://github.com/watawuwu/ccclog.git");
-        let markdown = changelog.markdown(Some(&gurl), &cms, &SEMVER_PATTERN)?;
+        let markdown = changelog.markdown(Some(&gurl), &cms, None)?;
         let expected = r#"## [Unreleased]
 ### Feat
 - [[2d185fa]] add second (Test User)
@@ -743,7 +742,7 @@ mod tests {
         let cms = Commits::new(prev, commits);
         let changelog = Changelog::new();
         let gurl = GithubUrl::new("https://github.com/watawuwu/ccclog.git");
-        let markdown = changelog.markdown(Some(&gurl), &cms, &SEMVER_PATTERN)?;
+        let markdown = changelog.markdown(Some(&gurl), &cms, None)?;
         let expected = r#"## [0.1.0] - 2020-04-01
 ### Feat
 - [[1d185fa]] add first (Test User)
@@ -770,7 +769,7 @@ mod tests {
         let cms = Commits::new(prev, commits);
         let changelog = Changelog::new();
         let gurl = GithubUrl::new("https://github.com/watawuwu/ccclog.git");
-        let markdown = changelog.markdown(Some(&gurl), &cms, &SEMVER_PATTERN)?;
+        let markdown = changelog.markdown(Some(&gurl), &cms, None)?;
         let expected = r#"## [0.1.0] - 2020-04-01
 ### Others
 - [[1d185fa]] add first (Test User)
@@ -828,7 +827,7 @@ mod tests {
         let cms = Commits::new(prev, commits);
         let changelog = Changelog::new();
         let gurl = GithubUrl::new("https://github.com/watawuwu/ccclog.git");
-        let markdown = changelog.markdown(Some(&gurl), &cms, &SEMVER_PATTERN)?;
+        let markdown = changelog.markdown(Some(&gurl), &cms, None)?;
         let expected = r#"## [0.3.0] - 2020-04-01
 ### Feat
 - [[3d185fa]] add 3 (Test User)
@@ -877,7 +876,7 @@ mod tests {
 
         let changelog = Changelog::from(conf);
         let gurl = GithubUrl::new("https://github.com/watawuwu/ccclog.git");
-        let markdown = changelog.markdown(Some(&gurl), &cms, &SEMVER_PATTERN)?;
+        let markdown = changelog.markdown(Some(&gurl), &cms, None)?;
         let expected = r#"## [0.3.0] - 2020-04-01
 ### Feat
 - [[3d185fa]] add 3 ([Test User](mailto:test-user@test.com))
@@ -914,7 +913,7 @@ mod tests {
         };
         let changelog = Changelog::from(conf);
         let gurl = GithubUrl::new("https://github.com/watawuwu/ccclog.git");
-        let markdown = changelog.markdown(Some(&gurl), &cms, &SEMVER_PATTERN)?;
+        let markdown = changelog.markdown(Some(&gurl), &cms, None)?;
         let expected = r#"# [0.3.0] - 2020-04-01
 ## Feat
 - [[3d185fa]] add 3 (Test User)
@@ -950,7 +949,7 @@ mod tests {
             ..Default::default()
         };
         let changelog = Changelog::from(conf);
-        let markdown = changelog.markdown(None, &cms, &SEMVER_PATTERN)?;
+        let markdown = changelog.markdown(None, &cms, None)?;
         let expected = r#"# 0.3.0 - 2020-04-01
 ## Feat
 - [1d185fa] add 1 (Test User)
@@ -1016,7 +1015,7 @@ mod tests {
         let prev = prev()?;
         let cms = Commits::new(prev, commits);
         let changelog = Changelog::new();
-        let markdown = changelog.markdown(None, &cms, &SEMVER_PATTERN)?;
+        let markdown = changelog.markdown(None, &cms, None)?;
         let expected = r#"## 0.3.0 - 2020-04-01
 ### Custom1
 - [2d185fa] add 2 (Test User)
@@ -1038,7 +1037,7 @@ mod tests {
             ..Default::default()
         };
         let changelog = Changelog::from(conf);
-        let markdown = changelog.markdown(None, &cms, &SEMVER_PATTERN)?;
+        let markdown = changelog.markdown(None, &cms, None)?;
         let expected = r#"## 0.1.0 - 2020-04-01
 ### Feat
 - [1d185fa] add 1 (Test User)
@@ -1058,7 +1057,7 @@ mod tests {
             ..Default::default()
         };
         let changelog = Changelog::from(conf);
-        let markdown = changelog.markdown(None, &cms, &SEMVER_PATTERN)?;
+        let markdown = changelog.markdown(None, &cms, None)?;
         let expected = r#"## 0.1.0 - 2020-04-01
 ### Feat
 - [1d185fa] add 1 (Test User)
@@ -1103,7 +1102,7 @@ mod tests {
             ..Default::default()
         };
         let changelog = Changelog::from(conf);
-        let markdown = changelog.markdown(None, &cmts, &SEMVER_PATTERN)?;
+        let markdown = changelog.markdown(None, &cmts, None)?;
         let expected = r#"## 0.1.0 - 2020-04-01
 ### Feat
 - [1d185fa] add 1 (Test User)
