@@ -86,7 +86,7 @@ pub(crate) mod tests {
     use git2::Oid;
     use std::str::FromStr;
     use tar::Archive;
-    use tempdir::TempDir;
+    use tempfile::tempdir;
 
     const GIT_DATA1: &[u8] = include_bytes!("../../tests/assets/git-data1.tar.gz");
     const GIT_DATA2: &[u8] = include_bytes!("../../tests/assets/git-data2.tar.gz");
@@ -101,7 +101,7 @@ pub(crate) mod tests {
             4 => GIT_DATA4.as_ref(),
             _ => bail!("Not found test git data"),
         };
-        let tmp_dir = TempDir::new("")?;
+        let tmp_dir = tempdir()?;
         let prefix = tmp_dir.into_path();
 
         let tar = GzDecoder::new(buf);
