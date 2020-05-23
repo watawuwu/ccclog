@@ -4,7 +4,7 @@ use flate2::read::GzDecoder;
 use predicates::prelude::*;
 use std::path::PathBuf;
 use tar::Archive;
-use tempdir::TempDir;
+use tempfile::tempdir;
 
 const BIN_NAME: &str = "ccclog";
 const GIT_DATA1: &[u8] = include_bytes!("assets/git-data1.tar.gz");
@@ -14,7 +14,7 @@ fn cmd() -> Result<Command> {
 }
 
 pub fn git_dir() -> Result<PathBuf> {
-    let tmp_dir = TempDir::new("")?;
+    let tmp_dir = tempdir()?;
     let prefix = tmp_dir.into_path();
 
     let tar = GzDecoder::new(GIT_DATA1.as_ref());
@@ -37,7 +37,7 @@ fn help_err() -> Result<()> {
 #[test]
 fn not_found_git_repo_err() -> Result<()> {
     let mut cmd = cmd()?;
-    let tmp_dir = TempDir::new("")?;
+    let tmp_dir = tempdir()?;
     let path = tmp_dir.into_path();
 
     cmd.arg(path.to_str().unwrap());
