@@ -29,7 +29,7 @@ exitcode          = "1.1"
 atty              = "0.2"
 chrono            = { version = "0.4", features = ["serde"] }
 git2              = "0.13"
-semver            = "0.9"
+semver            = "0.10"
 serde             = { version = "1.0", features = ["derive"] }
 serde_yaml        = "0.8"
 strum             = "0.18"
