@@ -21,7 +21,7 @@ impl Findable<ScanRange, Vec<Commit>> for Repository {
     fn find_by(&self, range: &ScanRange) -> Result<Vec<Commit>> {
         let mut rev = self.revwalk()?;
         match range.latest_id() {
-            Some(id) => rev.push(id.clone())?,
+            Some(id) => rev.push(*id)?,
             None => rev.push_head()?,
         };
         let commits = rev
