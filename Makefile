@@ -26,9 +26,8 @@ ifeq (,$(shell command -v cross 2> /dev/null))
 endif
 
 # cross command coudn't recognize environment variable
-CARGO_BUILD_TARGET_DIR  := /usr/local/target
-# armv7-unknown-linux-gnueabihf build on docker-compose
-CARGO_BUILD_TARGET      := armv7-unknown-linux-gnueabihf
+CARGO_BUILD_TARGET_DIR  := $(CURDIR)/target
+CARGO_BUILD_TARGET      := x86_64-apple-darwin
 CARGO_OPTIONS           :=
 CARGO_SUB_OPTIONS       := --target $(CARGO_BUILD_TARGET) --target-dir $(CARGO_BUILD_TARGET_DIR)
 CARGO_COMMAND           := $(CARGO_BIN) $(CARGO_OPTIONS)

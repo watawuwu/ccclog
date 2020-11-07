@@ -10,7 +10,7 @@ RUN mkdir src && \
 
 COPY . .
 
-RUN make deps release-build CARGO_BUILD_TARGET="x86_64-unknown-linux-musl"
+RUN make deps release-build CARGO_BUILD_TARGET="x86_64-unknown-linux-musl" CARGO_BUILD_TARGET_DIR="/usr/local/target"
 
 FROM alpine:3.12.1
 
