@@ -153,7 +153,7 @@ pub struct Author {
 
 impl Author {
     pub fn name(&self) -> &str {
-        self.name.as_deref().unwrap_or_else(|| "Unknown")
+        self.name.as_deref().unwrap_or("Unknown")
     }
 
     pub fn email(&self) -> Option<&str> {
