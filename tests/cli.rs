@@ -17,7 +17,7 @@ pub fn git_dir() -> Result<PathBuf> {
     let tmp_dir = tempdir()?;
     let prefix = tmp_dir.into_path();
 
-    let tar = GzDecoder::new(GIT_DATA1.as_ref());
+    let tar = GzDecoder::new(GIT_DATA1);
     let mut archive = Archive::new(tar);
     archive.unpack(&prefix)?;
     Ok(prefix.join("git-data1"))
