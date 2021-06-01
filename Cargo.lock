@@ -892,9 +892,9 @@ checksum = "b89a286a7e3b5720b9a477b23253bc50debac207c8d21505f8e70b36792f11b5"
 
 [[package]]
 name = "strum_macros"
-version = "0.19.4"
+version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e61bb0be289045cb80bfce000512e32d09f8337e54c186725da381377ad1f8d5"
+checksum = "cb076d8b589fde927ec90d05920d610554ca3a4d9dddb177481cadd071a19c2e"
 dependencies = [
  "heck",
  "proc-macro2",
