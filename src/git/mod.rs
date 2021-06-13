@@ -19,7 +19,7 @@ pub use github_url::GithubUrl;
 use version::*;
 
 pub fn repo<P: AsRef<Path>>(path: P) -> Result<Repository> {
-    Ok(Repository::open(&path).context("Not found git repository path")?)
+    Repository::open(&path).context("Not found git repository path")
 }
 
 pub fn gurl(repo: &Repository) -> Option<GithubUrl> {

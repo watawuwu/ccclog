@@ -48,13 +48,13 @@ impl TagFindable for Repository {
         let tags = self.tag_names(None)?;
         let versions: Versions = tags
             .into_iter()
-            .filter_map(|x| x)
+            .flatten()
             .filter_map(|x| Version::from_str(x).ok())
             .collect();
 
         let versions = versions.select(tag_prefix);
         let prefix = versions.prefix();
-        if prefix.iter().count() > 1 {
+        if prefix.len() > 1 {
             bail!("There are two or more Semantic version styles. Please specify and specify the tag-prefix option. ex) --tag-prefix={}", prefix.get(0).unwrap());
         }
 

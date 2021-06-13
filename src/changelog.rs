@@ -123,7 +123,7 @@ impl Changelog {
 
                 section
             })
-            .filter_map(|s| s)
+            .flatten()
             .join("\n");
 
         let links = links.first().map(|_| links.join("\n"));
